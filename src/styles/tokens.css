@@ -1,0 +1,70 @@
+/*
+ * automate-ethically — the pamphlet nailed to the door.
+ *
+ * Sibling of jacquard (the mill floor, indigo denim, dark) and phantom-thread
+ * (the atelier, parchment + lavender, light). This site is the civic broadside:
+ * unbleached muslin printed with indigo ink, stitched with madder-red thread.
+ * Dark mode is the same cloth dyed — it converges toward jacquard's denim.
+ *
+ * The one rule that outranks aesthetics, inherited from jacquard: gold is a
+ * human's hands and nothing else may wear it. If you need a warm accent, use
+ * madder.
+ */
+
+:root {
+	color-scheme: light dark;
+
+	/* ground — unbleached muslin */
+	--ae-paper: #f3efe6;
+	--ae-paper-2: #e9e3d5;
+	--ae-ink: #232a38;
+	--ae-muted: #5b6474;
+	--ae-line: rgba(35, 42, 56, 0.16);
+	--ae-line-soft: rgba(35, 42, 56, 0.09);
+	--ae-line-strong: rgba(35, 42, 56, 0.26);
+	--ae-card: rgba(255, 255, 255, 0.5);
+	--ae-shadow: rgba(35, 42, 56, 0.14);
+
+	/* indigo — the dye; links and primary structure */
+	--ae-indigo: #3b5386;
+	--ae-indigo-ink: #32456f;
+	--ae-indigo-wash: rgba(59, 83, 134, 0.1);
+
+	/* madder — the movement's thread; CTAs, chips, stitch dividers */
+	--ae-madder: #a04338;
+	--ae-madder-wash: rgba(160, 67, 56, 0.1);
+
+	/* RESERVED — gold is a human's hands, nothing else wears it */
+	--ae-gold: #8a6d24;
+	--ae-gold-wash: rgba(184, 148, 58, 0.14);
+
+	--ae-serif: "Source Serif 4 Variable", "Iowan Old Style", Georgia, serif;
+	--ae-sans: system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+	--ae-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+	--ae-tracking-eyebrow: 0.16em;
+	--ae-tracking-chip: 0.13em;
+	--ae-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+	--ae-max-text: 68ch;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		/* the same cloth, dyed — converges toward jacquard's denim */
+		--ae-paper: #131c2b;
+		--ae-paper-2: #0e1522;
+		--ae-ink: #eae5da;
+		--ae-muted: #98a3b5;
+		--ae-line: rgba(210, 220, 236, 0.14);
+		--ae-line-soft: rgba(210, 220, 236, 0.08);
+		--ae-line-strong: rgba(210, 220, 236, 0.24);
+		--ae-card: rgba(210, 220, 236, 0.05);
+		--ae-shadow: rgba(0, 0, 0, 0.4);
+		--ae-indigo: #8aa6e0;
+		--ae-indigo-ink: #a3bbec;
+		--ae-indigo-wash: rgba(138, 166, 224, 0.12);
+		--ae-madder: #d98a7c;
+		--ae-madder-wash: rgba(217, 138, 124, 0.1);
+		--ae-gold: #e4c06d;
+		--ae-gold-wash: rgba(228, 192, 109, 0.13);
+	}
+}

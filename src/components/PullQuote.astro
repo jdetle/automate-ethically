@@ -1,0 +1,13 @@
+---
+// Gold border: reserved for content whose subject is human accountability.
+interface Props {
+	attribution?: string;
+}
+
+const { attribution } = Astro.props;
+---
+
+<figure class="ae-pullquote">
+	<blockquote><slot /></blockquote>
+	{attribution && <figcaption>{attribution}</figcaption>}
+</figure>

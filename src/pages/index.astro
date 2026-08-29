@@ -1,0 +1,209 @@
+---
+import Base from "../layouts/Base.astro";
+import Stitch from "../components/Stitch.astro";
+import PillarCard from "../components/PillarCard.astro";
+import ProjectCard from "../components/ProjectCard.astro";
+import PullQuote from "../components/PullQuote.astro";
+---
+
+<Base
+	title="Automate Ethically"
+	description="A movement for automation with a human in the loop: laws that keep a person accountable for every automated decision, software built on that principle, and help retraining for durable work."
+>
+	<header class="ae-header">
+		<a class="ae-wordmark" href="/">
+			<span class="ae-wordmark-pill">automate&nbsp;ethically</span>
+		</a>
+		<nav class="ae-nav" aria-label="Sections">
+			<a href="#organize">Organize</a>
+			<a href="#build">Build</a>
+			<a href="#retrain">Retrain</a>
+			<a href="#get-involved">Get involved</a>
+		</nav>
+	</header>
+
+	<main id="main">
+		<!-- DRAFT: rewrite — copy task 1: hero headline + subhead -->
+		<section class="ae-hero" aria-labelledby="hero-title">
+			<p class="ae-eyebrow">A movement for ethical automation</p>
+			<h1 id="hero-title">A human makes the decision.</h1>
+			<p class="ae-hero-sub">
+				Automation can act. Only a person can decide — and a person can be held
+				accountable. We organize for laws, build software, and support workers
+				on that one principle.
+			</p>
+			<figure class="ae-epigraph">
+				<blockquote>
+					The loom did not remove the weaver. A person still chose the pattern,
+					punched the cards, examined the cloth, and signed the bolt.
+				</blockquote>
+				<figcaption>jacquard, 1804 — and the rule we intend to keep</figcaption>
+			</figure>
+			<div class="ae-cta-row">
+				<a class="ae-btn ae-btn--primary" href="#get-involved">Get involved</a>
+				<a class="ae-btn ae-btn--ghost" href="#manifesto">Read the manifesto</a>
+			</div>
+		</section>
+
+		<Stitch />
+
+		<!-- DRAFT: rewrite — copy task 2: manifesto -->
+		<section class="ae-section" id="manifesto" aria-labelledby="manifesto-title">
+			<div class="ae-container">
+				<p class="ae-eyebrow">Why now</p>
+				<h2 class="ae-h2" id="manifesto-title">
+					The anger is real. Aim it at the rulebook.
+				</h2>
+				<div class="ae-prose">
+					<p>
+						People are angry at data centers. People are angry at license-plate
+						cameras on every corner. The anger is not confusion. It is a correct
+						reaction to automation and surveillance arriving without consent,
+						without accountability, and without a plan for the people it
+						displaces.
+					</p>
+					<p>
+						But a data center is a totem. Tear one down and the automation it
+						served moves elsewhere. The durable win is not obstruction. It is
+						law: rules that require a human to make the decision, and to answer
+						for it, wherever an automated system touches a person's life.
+					</p>
+					<p>
+						Machines do not accept responsibility. Companies do not volunteer
+						it. Rules that protect people change only when people organize —
+						city by city, then state by state.
+					</p>
+				</div>
+				<PullQuote attribution="Detlefs' Law">
+					In an automation arms race, the automations favoring laziness will
+					always outpace the automations favoring intellectual rigor.
+				</PullQuote>
+			</div>
+		</section>
+
+		<Stitch />
+
+		<section class="ae-section ae-section--tint" aria-labelledby="pillars-title">
+			<div class="ae-container">
+				<p class="ae-eyebrow">The work</p>
+				<h2 class="ae-h2" id="pillars-title">Three pillars, one principle</h2>
+				<div class="ae-pillars">
+					<!-- DRAFT: rewrite — copy task 3: pillar Organize -->
+					<PillarCard title="Organize" chip="organizing now" id="organize">
+						<p>
+							Start where the decisions are made: city councils, county boards,
+							school boards. Ask for one ordinance:
+							<strong>an automation may act, but a person decides — and that
+							person is accountable.</strong> Then carry it to the state house.
+						</p>
+					</PillarCard>
+					<!-- DRAFT: rewrite — copy task 4: pillar Build ethically -->
+					<PillarCard title="Build ethically" chip="software below" id="build">
+						<p>
+							Policy asks people to behave. Software can make the rule
+							physical. We build tools where
+							<strong>accountability is enforced by the build itself</strong> —
+							a machine can propose, but it cannot sign.
+						</p>
+					</PillarCard>
+					<!-- DRAFT: rewrite — copy task 5: pillar Retrain -->
+					<PillarCard title="Retrain" chip="coming" chipQuiet id="retrain">
+						<p>
+							The honest answer to "there will always be more work" is a
+							coordination layer that helps people
+							<strong>learn the next field while they still have this
+							job</strong> — from the office, from home, before the pink slip.
+							Without that layer, optimism becomes cruelty.
+						</p>
+					</PillarCard>
+				</div>
+			</div>
+		</section>
+
+		<Stitch />
+
+		<section class="ae-section" id="projects" aria-labelledby="projects-title">
+			<div class="ae-container">
+				<p class="ae-eyebrow">Built on these principles</p>
+				<h2 class="ae-h2" id="projects-title">Proof, in working code</h2>
+				<div class="ae-projects">
+					<!-- DRAFT: rewrite — copy task 6: project card jacquard -->
+					<ProjectCard name="jacquard" chip="in development" chipQuiet>
+						<p>
+							Version control where a decision is an object in the graph. An
+							agent can draft a decision and propose it.
+						</p>
+						<p class="ae-project-human">
+							Only a person can settle it — with a few sentences in their own
+							words, under their own name.
+						</p>
+					</ProjectCard>
+					<!-- DRAFT: rewrite — copy task 7: project card phantom-thread -->
+					<ProjectCard name="phantom-thread" chip="request an invite">
+						<p>
+							A careful review and a rubber stamp leave the same green check.
+							phantom-thread makes them distinguishable — and rewards the
+							careful one.
+						</p>
+						<p>
+							<a href="https://jdetle.com/phantom-thread">Preview at
+							jdetle.com/phantom-thread</a> (invite-gated today).
+						</p>
+					</ProjectCard>
+				</div>
+				<p class="ae-aside">
+					The thinking behind these tools lives at
+					<a href="https://jdetle.com">jdetle.com</a>.
+				</p>
+			</div>
+		</section>
+
+		<Stitch />
+
+		<!-- DRAFT: rewrite — copy task 8: movement / PAC-goal statement -->
+		<section class="ae-section ae-section--tint" id="movement" aria-labelledby="movement-title">
+			<div class="ae-container">
+				<p class="ae-eyebrow">The movement</p>
+				<h2 class="ae-h2" id="movement-title">Don't hate the player. Change the rulebook.</h2>
+				<p class="ae-plain">
+					We intend to form a registered political committee. Until that
+					exists, we are neighbors, builders, and organizers — and we are not
+					asking for money.
+				</p>
+			</div>
+		</section>
+
+		<!-- DRAFT: rewrite — copy task 9: get-involved CTA -->
+		<section class="ae-section" id="get-involved" aria-labelledby="cta-title">
+			<div class="ae-container">
+				<p class="ae-eyebrow">Get involved</p>
+				<h2 class="ae-h2" id="cta-title">Start with one email</h2>
+				<p class="ae-plain">
+					Tell us your city and what you can do — an hour a month is enough.
+				</p>
+				<div class="ae-cta-row">
+					<a
+						class="ae-btn ae-btn--primary"
+						href="mailto:join@automate-ethically.com?subject=Count%20me%20in"
+					>join@automate-ethically.com</a>
+				</div>
+			</div>
+		</section>
+
+		<div class="ae-coda">
+			<p>
+				&ldquo;Physics was the easy part. Everyone still has to become
+				different at the same time, and everyone has a reason to go
+				last.&rdquo;
+			</p>
+		</div>
+	</main>
+
+	<footer class="ae-footer">
+		<!-- DRAFT: rewrite — copy task 10: footer -->
+		<div class="ae-footer-inner">
+			<span>&copy; 2026 John Detlefs &middot; <a href="https://jdetle.com">jdetle.com</a></span>
+			<span class="ae-footer-sign">&hellip;and signed the bolt.</span>
+		</div>
+	</footer>
+</Base>

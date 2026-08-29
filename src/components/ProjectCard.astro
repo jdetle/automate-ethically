@@ -1,0 +1,16 @@
+---
+interface Props {
+	name: string;
+	chip: string;
+	chipQuiet?: boolean;
+}
+
+const { name, chip, chipQuiet = false } = Astro.props;
+---
+
+<article class="ae-card">
+	<div class="ae-card-punch" aria-hidden="true"></div>
+	<h3 class="ae-project-name">{name}</h3>
+	<slot />
+	<span class:list={["ae-chip", { "ae-chip--quiet": chipQuiet }]}>{chip}</span>
+</article>

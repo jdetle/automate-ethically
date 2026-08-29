@@ -1,0 +1,499 @@
+/* Layout, sections, and textile motifs. Token vocabulary lives in tokens.css. */
+
+* ,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+html {
+	scroll-behavior: smooth;
+}
+
+body {
+	margin: 0;
+	min-height: 100vh;
+	font-family: var(--ae-sans);
+	font-size: 16px;
+	line-height: 1.6;
+	color: var(--ae-ink);
+	background: var(--ae-paper);
+	overflow-x: clip;
+	-webkit-font-smoothing: antialiased;
+}
+
+::selection {
+	background: var(--ae-indigo-wash);
+}
+
+a {
+	color: var(--ae-indigo-ink);
+	text-underline-offset: 3px;
+	text-decoration-thickness: 1px;
+}
+
+a:hover {
+	color: var(--ae-ink);
+}
+
+:focus-visible {
+	outline: 2px solid var(--ae-indigo);
+	outline-offset: 3px;
+	border-radius: 4px;
+}
+
+h1,
+h2,
+h3 {
+	margin: 0;
+	font-family: var(--ae-serif);
+	font-weight: 480;
+	color: var(--ae-ink);
+}
+
+p {
+	margin: 0;
+}
+
+.ae-skip {
+	position: absolute;
+	left: -999px;
+	top: 8px;
+	z-index: 10;
+	padding: 8px 14px;
+	background: var(--ae-paper);
+	border: 1px solid var(--ae-line-strong);
+	border-radius: 999px;
+	font-size: 13px;
+}
+
+.ae-skip:focus-visible {
+	left: 8px;
+}
+
+/* Woven-cloth ground: fiber noise + warp/weft grid. The noise is a
+ * pre-rasterized tiled SVG baked into a background-image, never a live CSS
+ * filter — tiled backgrounds are effectively free. */
+.ae-weave {
+	position: fixed;
+	inset: 0;
+	pointer-events: none;
+	z-index: 0;
+	opacity: 0.5;
+	color: var(--ae-line-soft);
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.35 0 0 0 0 0.35 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"),
+		repeating-linear-gradient(
+			0deg,
+			currentColor 0px,
+			currentColor 1px,
+			transparent 1px,
+			transparent 5px
+		),
+		repeating-linear-gradient(
+			90deg,
+			currentColor 0px,
+			currentColor 1px,
+			transparent 1px,
+			transparent 6px
+		);
+}
+
+/* ---- Header ---- */
+
+.ae-header {
+	position: relative;
+	z-index: 2;
+	max-width: 1120px;
+	margin: 0 auto;
+	padding: 22px 24px;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 14px;
+}
+
+.ae-wordmark {
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+	text-decoration: none;
+	color: var(--ae-ink);
+}
+
+.ae-wordmark-pill {
+	display: inline-block;
+	padding: 5px 12px;
+	border: 1px dashed var(--ae-madder);
+	border-radius: 999px;
+	font-family: var(--ae-mono);
+	font-size: 12px;
+	letter-spacing: 0.02em;
+	white-space: nowrap;
+	color: var(--ae-ink);
+}
+
+.ae-nav {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: flex-end;
+	min-width: 0;
+	gap: 10px 18px;
+	font-size: 12px;
+	letter-spacing: var(--ae-tracking-chip);
+	text-transform: uppercase;
+}
+
+.ae-nav a {
+	text-decoration: none;
+	color: var(--ae-muted);
+}
+
+.ae-nav a:hover {
+	color: var(--ae-ink);
+}
+
+/* ---- Sections ---- */
+
+main {
+	position: relative;
+	z-index: 1;
+}
+
+.ae-section {
+	scroll-margin-top: 24px;
+}
+
+.ae-section--tint {
+	background: var(--ae-paper-2);
+	border-top: 1px solid var(--ae-line-soft);
+	border-bottom: 1px solid var(--ae-line-soft);
+}
+
+.ae-container {
+	max-width: 1120px;
+	margin: 0 auto;
+	padding: 64px 24px;
+}
+
+.ae-eyebrow {
+	margin: 0;
+	font-family: var(--ae-sans);
+	font-size: 12px;
+	font-weight: 600;
+	letter-spacing: var(--ae-tracking-eyebrow);
+	text-transform: uppercase;
+	color: var(--ae-madder);
+}
+
+.ae-h2 {
+	margin: 16px 0 0;
+	font-size: clamp(28px, 3.6vw, 44px);
+	line-height: 1.15;
+}
+
+.ae-prose {
+	max-width: var(--ae-max-text);
+}
+
+.ae-prose p {
+	margin: 18px 0 0;
+	font-size: 17px;
+	line-height: 1.7;
+}
+
+/* ---- Hero ---- */
+
+.ae-hero {
+	max-width: 1120px;
+	margin: 0 auto;
+	padding: 56px 24px 72px;
+}
+
+.ae-hero h1 {
+	margin: 20px 0 0;
+	font-size: clamp(38px, 6.4vw, 76px);
+	line-height: 1.05;
+	letter-spacing: -0.015em;
+	max-width: 18ch;
+}
+
+.ae-hero-sub {
+	margin: 22px 0 0;
+	font-size: clamp(16px, 1.6vw, 19px);
+	line-height: 1.62;
+	color: var(--ae-muted);
+	max-width: 58ch;
+}
+
+.ae-epigraph {
+	margin: 30px 0 0;
+	padding-left: 18px;
+	border-left: 2px solid var(--ae-line-strong);
+	max-width: 52ch;
+}
+
+.ae-epigraph blockquote {
+	margin: 0;
+	font-family: var(--ae-serif);
+	font-size: clamp(16px, 1.7vw, 20px);
+	line-height: 1.5;
+	font-style: italic;
+	color: var(--ae-ink);
+}
+
+.ae-epigraph figcaption {
+	margin-top: 8px;
+	font-size: 12px;
+	letter-spacing: var(--ae-tracking-chip);
+	text-transform: uppercase;
+	color: var(--ae-muted);
+}
+
+.ae-cta-row {
+	margin-top: 34px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+}
+
+.ae-btn {
+	display: inline-flex;
+	align-items: center;
+	min-height: 44px;
+	padding: 0 22px;
+	border-radius: 999px;
+	border: 1px solid var(--ae-line-strong);
+	color: var(--ae-ink);
+	text-decoration: none;
+	font-size: 12px;
+	font-weight: 600;
+	letter-spacing: var(--ae-tracking-chip);
+	text-transform: uppercase;
+	transition: transform 140ms var(--ae-ease), box-shadow 140ms var(--ae-ease);
+}
+
+.ae-btn:hover {
+	transform: translateY(-1px);
+	box-shadow: 0 6px 16px var(--ae-shadow);
+	color: var(--ae-ink);
+}
+
+.ae-btn--primary {
+	border-color: var(--ae-madder);
+	background: var(--ae-madder-wash);
+}
+
+.ae-btn--ghost {
+	background: transparent;
+}
+
+/* ---- Running stitch divider ---- */
+
+.ae-stitch {
+	display: block;
+	max-width: 1120px;
+	margin: 0 auto;
+	padding: 0 24px;
+	color: var(--ae-madder);
+}
+
+.ae-stitch svg {
+	display: block;
+	width: 100%;
+	height: 14px;
+}
+
+/* ---- Pull quote (gold = a human's hands; only accountability wears it) ---- */
+
+.ae-pullquote {
+	margin: 34px 0 0;
+	max-width: var(--ae-max-text);
+	padding: 20px 22px;
+	border-left: 3px solid var(--ae-gold);
+	background: var(--ae-gold-wash);
+	border-radius: 0 6px 6px 0;
+}
+
+.ae-pullquote blockquote {
+	margin: 0;
+	font-family: var(--ae-serif);
+	font-size: clamp(19px, 2vw, 24px);
+	line-height: 1.4;
+	color: var(--ae-ink);
+}
+
+.ae-pullquote figcaption {
+	margin-top: 10px;
+	font-size: 13px;
+	color: var(--ae-muted);
+}
+
+/* ---- Pillar cards ---- */
+
+.ae-pillars {
+	margin-top: 38px;
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+	gap: 20px;
+}
+
+.ae-card {
+	position: relative;
+	padding: 22px;
+	border: 1px solid var(--ae-line);
+	border-radius: 10px;
+	background: var(--ae-card);
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+/* Punched-card strip: a person punched the cards. */
+.ae-card-punch {
+	height: 10px;
+	border-radius: 5px;
+	background: radial-gradient(
+			circle at 5px 5px,
+			var(--ae-paper-2) 2.6px,
+			transparent 3.2px
+		)
+		left center / 14px 10px repeat-x;
+	border: 1px solid var(--ae-line-soft);
+	background-color: var(--ae-indigo-wash);
+}
+
+.ae-card h3 {
+	font-size: 24px;
+	line-height: 1.2;
+}
+
+.ae-card p {
+	font-size: 15px;
+	line-height: 1.65;
+	color: var(--ae-muted);
+}
+
+.ae-card p strong {
+	color: var(--ae-ink);
+	font-weight: 600;
+}
+
+.ae-chip {
+	align-self: flex-start;
+	margin-top: auto;
+	display: inline-block;
+	padding: 4px 11px;
+	border: 1px solid var(--ae-madder);
+	border-radius: 999px;
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: var(--ae-tracking-chip);
+	text-transform: uppercase;
+	color: var(--ae-madder);
+	background: var(--ae-madder-wash);
+}
+
+.ae-chip--quiet {
+	border-color: var(--ae-line-strong);
+	color: var(--ae-muted);
+	background: transparent;
+}
+
+/* ---- Project cards ---- */
+
+.ae-projects {
+	margin-top: 38px;
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+	gap: 20px;
+}
+
+.ae-project-name {
+	font-family: var(--ae-mono);
+	font-size: 15px;
+	letter-spacing: 0.02em;
+}
+
+.ae-project-human {
+	padding-left: 12px;
+	border-left: 2px solid var(--ae-gold);
+	color: var(--ae-ink);
+	font-style: italic;
+}
+
+.ae-aside {
+	margin-top: 26px;
+	font-size: 14px;
+	color: var(--ae-muted);
+	max-width: var(--ae-max-text);
+}
+
+/* ---- Movement / coda / CTA ---- */
+
+.ae-plain {
+	margin: 22px 0 0;
+	font-family: var(--ae-serif);
+	font-size: clamp(19px, 2.2vw, 26px);
+	line-height: 1.45;
+	max-width: 46ch;
+}
+
+.ae-coda {
+	max-width: 1120px;
+	margin: 0 auto;
+	padding: 44px 24px;
+	text-align: center;
+}
+
+.ae-coda p {
+	font-family: var(--ae-serif);
+	font-style: italic;
+	font-size: clamp(17px, 1.9vw, 22px);
+	color: var(--ae-muted);
+	max-width: 52ch;
+	margin: 0 auto;
+}
+
+/* ---- Footer ---- */
+
+.ae-footer {
+	border-top: 1px solid var(--ae-line-soft);
+	position: relative;
+	z-index: 1;
+}
+
+.ae-footer-inner {
+	max-width: 1120px;
+	margin: 0 auto;
+	padding: 28px 24px 40px;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 10px 20px;
+	font-size: 13px;
+	color: var(--ae-muted);
+}
+
+.ae-footer-sign {
+	font-family: var(--ae-serif);
+	font-style: italic;
+}
+
+/* ---- Motion ---- */
+
+@media (prefers-reduced-motion: reduce) {
+	html {
+		scroll-behavior: auto;
+	}
+
+	.ae-btn {
+		transition: none;
+	}
+
+	.ae-btn:hover {
+		transform: none;
+	}
+}
