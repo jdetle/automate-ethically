@@ -330,6 +330,60 @@ main {
 	color: var(--ae-muted);
 }
 
+/* ---- Urgency stats (numbers are the display type; every number cites) ---- */
+
+.ae-hero-urgent {
+	margin: 16px 0 0;
+	font-size: clamp(15px, 1.5vw, 18px);
+	line-height: 1.6;
+	color: var(--ae-madder);
+	font-weight: 600;
+	max-width: 58ch;
+}
+
+.ae-stats {
+	margin-top: 40px;
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+	gap: 32px 40px;
+}
+
+.ae-stat {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.ae-stat-num {
+	font-family: var(--ae-serif);
+	font-weight: 560;
+	font-size: clamp(52px, 6vw, 84px);
+	line-height: 1;
+	letter-spacing: -0.02em;
+	color: var(--ae-ink);
+	padding-bottom: 12px;
+	background-image: repeating-linear-gradient(
+		90deg,
+		var(--ae-madder) 0 9px,
+		transparent 9px 16px
+	);
+	background-size: 100% 2px;
+	background-position: left bottom;
+	background-repeat: no-repeat;
+}
+
+.ae-stat-label {
+	font-size: 15px;
+	line-height: 1.55;
+	color: var(--ae-ink);
+	max-width: 30ch;
+}
+
+.ae-stat-src {
+	font-size: 12.5px;
+	color: var(--ae-muted);
+}
+
 /* ---- Pillar cards ---- */
 
 .ae-pillars {

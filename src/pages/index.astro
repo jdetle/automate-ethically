@@ -28,9 +28,14 @@ import PullQuote from "../components/PullQuote.astro";
 			<p class="ae-eyebrow">A movement for ethical automation</p>
 			<h1 id="hero-title">A human makes the decision.</h1>
 			<p class="ae-hero-sub">
-				Automation can act. Only a person can decide — and a person can be held
-				accountable. We organize for laws, build software, and support workers
-				on that one principle.
+				Cameras watch your street. Machines answer your insurance claim. Data
+				centers rise at the edge of town. None of them can be held accountable
+				— only a person can. We want one rule, everywhere it matters:
+				<strong>a human makes the decision, and answers for it.</strong>
+			</p>
+			<p class="ae-hero-urgent">
+				The laws are being written right now — 45 states are debating them
+				this session. The rulebook gets set with you, or without you.
 			</p>
 			<figure class="ae-epigraph">
 				<blockquote>
@@ -56,28 +61,81 @@ import PullQuote from "../components/PullQuote.astro";
 				</h2>
 				<div class="ae-prose">
 					<p>
-						People are angry at data centers. People are angry at license-plate
-						cameras on every corner. The anger is not confusion. It is a correct
-						reaction to automation and surveillance arriving without consent,
-						without accountability, and without a plan for the people it
-						displaces.
+						You are right to be angry. The cameras went up without asking you.
+						The data center got its permits before you heard about it. The
+						machine denied the claim, and no one's name was on the denial.
 					</p>
 					<p>
-						But a data center is a totem. Tear one down and the automation it
-						served moves elsewhere. The durable win is not obstruction. It is
-						law: rules that require a human to make the decision, and to answer
-						for it, wherever an automated system touches a person's life.
+						But a data center is a totem. Block one, and the machines it
+						served move one county over. The win that lasts is a law: wherever
+						an automated system touches your life, a person decides — and that
+						person answers for it.
 					</p>
 					<p>
-						Machines do not accept responsibility. Companies do not volunteer
-						it. Rules that protect people change only when people organize —
-						city by city, then state by state.
+						Machines cannot take responsibility. Companies will not volunteer
+						it. Rules change when neighbors organize — city by city, then
+						state by state. That is how it has always worked.
 					</p>
 				</div>
 				<PullQuote attribution="Detlefs' Law">
 					In an automation arms race, the automations favoring laziness will
 					always outpace the automations favoring intellectual rigor.
 				</PullQuote>
+			</div>
+		</section>
+
+		<Stitch />
+
+		<!-- DRAFT: rewrite — copy task 11: urgency stats framing (numbers + citations stay; see FACTS.md) -->
+		<section class="ae-section" id="clock" aria-labelledby="clock-title">
+			<div class="ae-container">
+				<p class="ae-eyebrow">Right now</p>
+				<h2 class="ae-h2" id="clock-title">The clock is the rulebook</h2>
+				<p class="ae-hero-sub">
+					None of this is hypothetical. It is already on your street, your
+					power bill, and your legislature's calendar.
+				</p>
+				<div class="ae-stats">
+					<div class="ae-stat">
+						<span class="ae-stat-num">6,000</span>
+						<span class="ae-stat-label">
+							communities watched by one company's license-plate cameras,
+							across 49 states
+						</span>
+						<span class="ae-stat-src">
+							<a href="https://www.ipm.org/news/2026-08-17/flock-safety-tightens-safeguards-as-states-cities-question-surveillance-network">Stateline</a>, Aug 2026
+						</span>
+					</div>
+					<div class="ae-stat">
+						<span class="ae-stat-num">426&thinsp;TWh</span>
+						<span class="ae-stat-label">
+							projected US data-center electricity by 2030 — more than double
+							2024, and nearly half of all US demand growth
+						</span>
+						<span class="ae-stat-src">
+							<a href="https://www.iea.org/reports/energy-and-ai/energy-demand-from-ai">IEA, Energy and AI</a>
+						</span>
+					</div>
+					<div class="ae-stat">
+						<span class="ae-stat-num">1,561</span>
+						<span class="ae-stat-label">
+							AI bills introduced in 45 states this session — the rules are
+							being written with you or without you
+						</span>
+						<span class="ae-stat-src">
+							<a href="https://www.multistate.ai/artificial-intelligence-ai-legislation">multistate.ai</a>, Mar 2026
+						</span>
+					</div>
+				</div>
+				<p class="ae-aside">
+					It can go the right way: more than 50 communities have already
+					paused or canceled camera contracts since January
+					(<a href="https://www.npr.org/2026/02/17/nx-s1-5612825/flock-contracts-canceled-immigration-survillance-concerns">NPR</a>),
+					and Montana already requires a human to review AI-driven agency
+					decisions. Facts checked Aug 2026 — sources and our correction
+					policy live in the open at
+					<a href="https://github.com/jdetle/automate-ethically/blob/main/FACTS.md">FACTS.md</a>.
+				</p>
 			</div>
 		</section>
 
@@ -177,9 +235,11 @@ import PullQuote from "../components/PullQuote.astro";
 		<section class="ae-section" id="get-involved" aria-labelledby="cta-title">
 			<div class="ae-container">
 				<p class="ae-eyebrow">Get involved</p>
-				<h2 class="ae-h2" id="cta-title">Start with one email</h2>
+				<h2 class="ae-h2" id="cta-title">Your town writes rules this year. Be in the room.</h2>
 				<p class="ae-plain">
-					Tell us your city and what you can do — an hour a month is enough.
+					It starts with one email: your city, and what you can do. An hour a
+					month is enough — most ordinances pass in rooms with ten people in
+					them.
 				</p>
 				<div class="ae-cta-row">
 					<a
