@@ -3,5 +3,8 @@ dist
 .git
 .github
 docs
-README.md
-FACTS.md
+
+# FACTS.md is NOT excluded: src/pages/facts.astro reads it at build time to
+# render /facts from the same file that governs every cited number on the
+# site. Excluding it here builds a container that dies with ENOENT while the
+# local build stays green, so leave it in the context.
