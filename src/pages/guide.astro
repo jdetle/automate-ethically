@@ -160,7 +160,8 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 
 <script>
 	import { decayOrb, pulseFromText, setLevelAndSpectrum, setOrbConversationState } from "../lib/guide-orb-state";
-	import { speak, speechConfigured, type SpeechHandle } from "../lib/speech-playback";
+	import { speechConfigured, startSpeech, type SpeechSession, unlockAudio } from "../lib/speech-playback";
+	import { renderMarkdownInto } from "../lib/markdown-dom";
 
 	const VOICE_KEY = "ae-guide-voice";
 
@@ -488,65 +489,76 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 	// its own is startling, and the toggle only appears once we know a voice
 	// is actually configured server-side.
 	let muted = true;
-	let currentSpeech: SpeechHandle | null = null;
+	let audioUnlocked = false;
+	let currentSpeech: SpeechSession | null = null;
 
 	void speechConfigured().then((available) => {
 		if (!available || !voiceBtn) return;
-		try {
-			muted = localStorage.getItem(VOICE_KEY) !== "on";
-		} catch {
-			/* stay muted */
-		}
+		// Never auto-enable from a stored preference: Safari only unlocks audio
+		// inside a real gesture, so a "voice on" restored at page load would be
+		// a promise the page cannot keep. The stored value decides the *label*
+		// nudge, not the state.
+		muted = true;
 		voiceBtn.hidden = false;
-		voiceBtn.textContent = muted ? "voice off" : "voice on";
-		voiceBtn.setAttribute("aria-pressed", String(!muted));
+		voiceBtn.textContent = "voice off";
+		voiceBtn.setAttribute("aria-pressed", "false");
+
 		voiceBtn.addEventListener("click", () => {
-			muted = !muted;
-			voiceBtn.textContent = muted ? "voice off" : "voice on";
-			voiceBtn.setAttribute("aria-pressed", String(!muted));
+			const turningOn = muted;
+			if (turningOn) {
+				// MUST be called synchronously in the click handler — see
+				// unlockAudio() in speech-playback.ts. Doing this after an await
+				// loses the gesture and the context stays silently suspended,
+				// which is exactly how "voice on" ended up producing no sound.
+				const unlocking = unlockAudio();
+				muted = false;
+				voiceBtn.textContent = "voice on";
+				voiceBtn.setAttribute("aria-pressed", "true");
+				void unlocking.then((ok) => {
+					audioUnlocked = ok;
+					if (!ok) {
+						// Be honest rather than leaving a toggle that lies.
+						muted = true;
+						voiceBtn.textContent = "voice unavailable";
+						voiceBtn.setAttribute("aria-pressed", "false");
+						voiceBtn.disabled = true;
+					}
+				});
+			} else {
+				muted = true;
+				voiceBtn.textContent = "voice off";
+				voiceBtn.setAttribute("aria-pressed", "false");
+				currentSpeech?.cancel();
+				currentSpeech = null;
+				hideSpeakingIndicator();
+			}
 			try {
 				localStorage.setItem(VOICE_KEY, muted ? "off" : "on");
 			} catch {
 				/* non-fatal */
 			}
-			if (muted) {
-				currentSpeech?.cancel();
-				currentSpeech = null;
-			}
 		});
 	});
 
-	// Bare URLs turned into real links — never raw HTML. The system prompt
-	// asks the model to say "I found this via <url>" when it cites a search
-	// result, so a reply that never becomes clickable would undercut its own
-	// checkability. Built from text/anchor nodes only, never innerHTML: the
-	// text here is a live model's output, not something to trust with markup.
-	const URL_RE = /(https?:\/\/[^\s<>"')]+)/g;
-
-	function renderReplyText(el: HTMLParagraphElement, text: string) {
-		el.textContent = "";
-		let lastIndex = 0;
-		for (const match of text.matchAll(URL_RE)) {
-			const url = match[0];
-			const start = match.index ?? 0;
-			if (start > lastIndex) el.appendChild(document.createTextNode(text.slice(lastIndex, start)));
-			const a = document.createElement("a");
-			a.href = url;
-			a.textContent = url;
-			a.target = "_blank";
-			a.rel = "noopener noreferrer";
-			el.appendChild(a);
-			lastIndex = start + url.length;
-		}
-		if (lastIndex < text.length) el.appendChild(document.createTextNode(text.slice(lastIndex)));
+	// Replies are markdown (headings, lists, links to this site's own pages).
+	// renderMarkdownInto parses with marked's lexer and builds DOM nodes
+	// directly — never innerHTML — so untrusted model output, which is shaped
+	// by both the visitor's text and pages the model read, cannot inject
+	// markup. See src/lib/markdown-dom.ts.
+	function renderReplyText(el: HTMLElement, text: string) {
+		renderMarkdownInto(el, text);
 	}
 
-	function appendCursor(el: HTMLParagraphElement) {
+	function appendCursor(el: HTMLElement) {
 		const cursor = document.createElement("span");
 		cursor.className = "ae-guide-cursor";
 		cursor.setAttribute("aria-hidden", "true");
 		cursor.textContent = "▍";
-		el.appendChild(cursor);
+		// Sit inside the final block so the caret trails the last word rather
+		// than dropping onto a line of its own below a list or heading.
+		const last = el.lastElementChild;
+		if (last && /^(P|LI|H3|H4)$/.test(last.tagName)) last.appendChild(cursor);
+		else el.appendChild(cursor);
 	}
 
 	// Which row's "reading aloud" pill is currently shown — at most one at a
@@ -568,26 +580,46 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 	// same as jacquard. Silent fallback to the text-pulse already shown while
 	// streaming if speech isn't configured or the call fails; nothing is
 	// lost, the reply is already on screen either way.
-	async function sayItOutLoud(text: string, row: HTMLDivElement | null) {
-		currentSpeech?.cancel();
-		currentSpeech = null;
-		hideSpeakingIndicator();
-		if (muted || !text.trim()) return;
+	/**
+	 * Speaks the reply as it is written, not after it is finished.
+	 *
+	 * Waiting for the whole reply meant a long silence and then a monologue —
+	 * which is what "not real time" felt like. This starts a session up front
+	 * and hands it each sentence as soon as the model completes one, so the
+	 * guide begins talking within a sentence or two of starting to write.
+	 */
+	function beginSpeech(row: HTMLDivElement | null): SpeechSession | null {
+		if (muted || !audioUnlocked) return null;
 		try {
-			const handle = await speak(text, await ensureSession(), setLevelAndSpectrum);
-			currentSpeech = handle;
-			setOrbConversationState("speaking");
+			const session = startSpeech(ensureSession, setLevelAndSpectrum);
+			currentSpeech = session;
 			showSpeakingIndicator(row);
-			await handle.done;
-			if (currentSpeech === handle) {
-				currentSpeech = null;
-				setOrbConversationState("idle");
-			}
+			void session.done.then(() => {
+				if (currentSpeech === session) {
+					currentSpeech = null;
+					if (!busy) setOrbConversationState("idle");
+				}
+				hideSpeakingIndicator();
+			});
+			return session;
 		} catch {
-			/* no voice this time — the text is already on screen */
-		} finally {
-			hideSpeakingIndicator();
+			// Audio unavailable — the text is already on screen, which is the
+			// part that matters.
+			return null;
 		}
+	}
+
+	/**
+	 * Pulls complete sentences off the front of the buffer. Only complete ones:
+	 * feeding a half-sentence to TTS produces an audible clip mid-word, and the
+	 * remainder is flushed when the stream ends anyway.
+	 */
+	function takeCompleteSentences(buffer: string): { ready: string; rest: string } {
+		// Split after . ! ? or a newline, when followed by whitespace.
+		const match = buffer.match(/^[\s\S]*?(?:[.!?](?=\s)|\n)(?=[\s\S])/g);
+		if (!match) return { ready: "", rest: buffer };
+		const ready = match.join("");
+		return { ready, rest: buffer.slice(ready.length) };
 	}
 
 	/**
@@ -745,6 +777,11 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 
 	async function send(message: string) {
 		if (busy || !message.trim()) return;
+		// A new question stops the previous answer mid-word — the person has
+		// moved on, and talking over them is worse than silence.
+		currentSpeech?.cancel();
+		currentSpeech = null;
+		hideSpeakingIndicator();
 		busy = true;
 		if (sendBtn) sendBtn.disabled = true;
 		if (input) input.value = "";
@@ -757,6 +794,10 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 		const { row: replyRow, textEl: replyP } = addTurn("assistant", "");
 		setWorking(replyRow, "Thinking");
 		let replyText = "";
+		// Opened up front so the first finished sentence can be spoken while
+		// the rest is still being written.
+		const speech = beginSpeech(replyRow);
+		let speechBuffer = "";
 
 		try {
 			let session: string;
@@ -829,7 +870,16 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 						replyText += data.text;
 						renderReplyText(replyP, replyText);
 						appendCursor(replyP);
-						pulseFromText(data.text);
+						if (speech) {
+							speechBuffer += data.text;
+							const { ready, rest } = takeCompleteSentences(speechBuffer);
+							speechBuffer = rest;
+							if (ready.trim()) speech.enqueue(ready);
+						} else {
+							// No voice this turn: the orb falls back to its
+							// text-arrival pulse so it still reacts to the reply.
+							pulseFromText(data.text);
+						}
 						if (transcript) transcript.scrollTop = transcript.scrollHeight;
 					} else if (event === "trace") {
 						renderTrace(replyRow, data as TraceData);
@@ -840,6 +890,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 						// it, so nothing before the line gets crossed stays on
 						// screen next to it.
 						errored = true;
+						speech?.cancel();
 						replyP.textContent = data.message;
 					}
 				}
@@ -851,7 +902,10 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 				// from "that was the last one" until the stream actually ends.
 				renderReplyText(replyP, replyText);
 				history.push({ role: "assistant", text: replyText });
-				void sayItOutLoud(replyText, replyRow);
+				if (speech) {
+					if (speechBuffer.trim()) speech.enqueue(speechBuffer);
+					speech.end();
+				}
 			}
 		} catch {
 			replyP.textContent = "Couldn't reach the guide — check your connection and try again.";
@@ -1200,11 +1254,107 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 	.ae-guide-turn p {
 		font-size: 16px;
 		line-height: 1.6;
+	}
+
+	/* Replies are rendered markdown now, so the bubble has to style real
+	 * prose — headings, lists, quotes — not just a single paragraph.
+	 * white-space: pre-wrap is gone deliberately: markdown handles the line
+	 * breaks, and keeping it would double every gap. */
+	.ae-guide-turn--you p {
 		white-space: pre-wrap;
 	}
 
-	.ae-guide-turn p a {
+	.ae-guide-turn a {
 		color: var(--ae-indigo-ink);
+		text-underline-offset: 2px;
+	}
+
+	.ae-guide-turn p + p,
+	.ae-guide-turn ul,
+	.ae-guide-turn ol,
+	.ae-guide-turn blockquote,
+	.ae-guide-turn pre {
+		margin-top: 10px;
+	}
+
+	.ae-guide-turn h3,
+	.ae-guide-turn h4 {
+		margin: 14px 0 4px;
+		font-family: var(--ae-sans);
+		font-size: 13px;
+		font-weight: 700;
+		letter-spacing: var(--ae-tracking-chip);
+		text-transform: uppercase;
+		color: var(--ae-madder);
+	}
+
+	.ae-guide-turn h3:first-child,
+	.ae-guide-turn h4:first-child {
+		margin-top: 0;
+	}
+
+	.ae-guide-turn ul,
+	.ae-guide-turn ol {
+		padding-left: 20px;
+		display: flex;
+		flex-direction: column;
+		gap: 5px;
+		font-size: 16px;
+		line-height: 1.55;
+	}
+
+	.ae-guide-turn li::marker {
+		color: var(--ae-madder);
+	}
+
+	.ae-guide-turn blockquote {
+		margin-left: 0;
+		padding-left: 12px;
+		border-left: 2px solid var(--ae-line-strong);
+		color: var(--ae-muted);
+	}
+
+	.ae-guide-turn code {
+		font-size: 14px;
+		background: var(--ae-paper);
+		padding: 1px 4px;
+		border-radius: 3px;
+	}
+
+	.ae-guide-turn pre {
+		overflow-x: auto;
+		padding: 10px 12px;
+		background: var(--ae-paper);
+		border: 1px solid var(--ae-line);
+		border-radius: 6px;
+	}
+
+	.ae-guide-turn pre code {
+		background: none;
+		padding: 0;
+	}
+
+	.ae-guide-turn hr {
+		margin: 12px 0;
+		border: none;
+		border-top: 1px dashed var(--ae-line-strong);
+	}
+
+	.ae-md-table {
+		overflow-x: auto;
+		margin-top: 10px;
+	}
+
+	.ae-md-table table {
+		border-collapse: collapse;
+		font-size: 14px;
+	}
+
+	.ae-md-table th,
+	.ae-md-table td {
+		border: 1px solid var(--ae-line);
+		padding: 5px 9px;
+		text-align: left;
 	}
 
 	.ae-guide-cursor {
