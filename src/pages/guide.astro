@@ -130,10 +130,55 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 	let pendingTokenResolve: ((token: string) => void) | null = null;
 	let pendingTokenReject: ((err: Error) => void) | null = null;
 
-	function settleTurnstile(fn: (() => void) | null) {
+	// Settles whichever getTurnstileToken() call is currently pending. This
+	// MUST capture pendingTokenResolve/pendingTokenReject into locals before
+	// clearing the outer variables: the previous version cleared them first
+	// and then invoked a closure that read the (now-null) outer variables at
+	// call time, not the values captured when the closure was created — so
+	// resolve()/reject() silently never ran. A real Cloudflare success would
+	// log a token and then just hang forever, input stuck disabled, with no
+	// error and no visible cause — the single worst failure mode this file
+	// could have, since it looks identical to "still loading."
+	function settleTurnstile(kind: "resolve" | "reject", payload: string | Error) {
+		const resolve = pendingTokenResolve;
+		const reject = pendingTokenReject;
 		pendingTokenResolve = null;
 		pendingTokenReject = null;
-		fn?.();
+		if (kind === "resolve" && typeof payload === "string") resolve?.(payload);
+		if (kind === "reject" && payload instanceof Error) reject?.(payload);
+	}
+
+	// The Cloudflare script tag below is `async defer` — it can finish
+	// downloading and execute either before or after this module script,
+	// there's no guaranteed order between them. Calling anything on
+	// `window.turnstile` without waiting for it first is a real race, not a
+	// hypothetical one: on a fast page load (a warm cache, a fast machine —
+	// exactly the conditions a real visitor or a test run both hit) this
+	// script can reach the widget-setup code before Cloudflare's script has
+	// finished loading, and `window.turnstile` is simply `undefined` yet.
+	// That produced an *immediate*, silent "verification isn't available"
+	// rejection with no network round trip at all — easy to mistake for a
+	// real Cloudflare rejection (bot detection, a misconfigured widget) when
+	// it was actually a load-order bug in this file. Confirmed the fix with
+	// Cloudflare's own always-pass test keys (docs/…, tests/guide.e2e.spec.ts)
+	// rather than the real widget — see that test file for why.
+	function waitForTurnstile(timeoutMs = 8000): Promise<boolean> {
+		if (window.turnstile) return Promise.resolve(true);
+		return new Promise((resolve) => {
+			const deadline = performance.now() + timeoutMs;
+			const check = () => {
+				if (window.turnstile) {
+					resolve(true);
+					return;
+				}
+				if (performance.now() >= deadline) {
+					resolve(false);
+					return;
+				}
+				setTimeout(check, 50);
+			};
+			check();
+		});
 	}
 
 	function ensureTurnstileWidget(): boolean {
@@ -143,17 +188,18 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 			sitekey: turnstileSiteKey,
 			appearance: "interaction-only",
 			execution: "execute",
-			callback: (token: string) => settleTurnstile(() => pendingTokenResolve?.(token)),
-			"error-callback": () => settleTurnstile(() => pendingTokenReject?.(new Error("verification error"))),
-			"expired-callback": () => settleTurnstile(() => pendingTokenReject?.(new Error("verification expired"))),
+			callback: (token: string) => settleTurnstile("resolve", token),
+			"error-callback": () => settleTurnstile("reject", new Error("verification error")),
+			"expired-callback": () => settleTurnstile("reject", new Error("verification expired")),
 		});
 		return true;
 	}
 
 	/** Mints one fresh token. Never cached, never reused across calls. */
-	function getTurnstileToken(): Promise<string> {
+	async function getTurnstileToken(): Promise<string> {
+		const ready = await waitForTurnstile();
 		return new Promise((resolve, reject) => {
-			if (!ensureTurnstileWidget() || turnstileWidgetId === null || !window.turnstile) {
+			if (!ready || !ensureTurnstileWidget() || turnstileWidgetId === null || !window.turnstile) {
 				reject(new Error("verification isn't available right now"));
 				return;
 			}
@@ -162,7 +208,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 			window.turnstile.reset(turnstileWidgetId);
 			window.turnstile.execute(turnstileWidgetId);
 			setTimeout(() => {
-				if (pendingTokenReject) settleTurnstile(() => reject(new Error("verification timed out")));
+				if (pendingTokenReject) settleTurnstile("reject", new Error("verification timed out"));
 			}, 15000);
 		});
 	}
