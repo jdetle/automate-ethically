@@ -85,6 +85,15 @@ other page is still plain prerendered HTML; see the adapter note in
   plainly when a search finds nothing — the same anti-hallucination
   discipline FACTS.md holds the rest of the site to, applied to a model that
   can otherwise sound confident while being wrong.
+- **A system prompt is an instruction, not a guarantee.**
+  `src/lib/guide-guardrails.ts` is the code-level backstop: an input
+  heuristic that quietly flags likely jailbreak phrasing (logged, never
+  blocking — see the file for why), and an output guardrail that scans the
+  model's own streamed reply and can kill it mid-sentence if it crosses the
+  fundraising or PAC-existence line, regardless of how it got talked into
+  trying. [`docs/guide-red-team-tests.md`](docs/guide-red-team-tests.md) is
+  the adversarial test plan for this — read it before touching the system
+  prompt or the guardrail regexes.
 - **Location is asked in conversation, never stored** — consistent with the
   rest of the site's no-persistent-data stance (see the footer's privacy
   line). Each conversation's history lives only in the browser tab.

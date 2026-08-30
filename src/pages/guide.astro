@@ -66,15 +66,24 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 
 			<div class="ae-guide-transcript" id="guide-transcript"></div>
 
+			<div class="ae-guide-verify" id="guide-verify" hidden>
+				<p class="ae-guide-verify-hint">
+					One quick check before you can send anything — a box appears below
+					only if Cloudflare decides it needs to see you click it.
+				</p>
+				<div id="guide-turnstile" data-sitekey={turnstileSiteKey}></div>
+			</div>
+
 			<form class="ae-guide-form" id="guide-form">
 				<textarea
 					id="guide-input"
 					class="ae-guide-input"
-					placeholder="Your town, what you're good at, or just say hi"
+					placeholder="Verifying you're human…"
 					rows="2"
 					aria-label="Message"
+					disabled
 				></textarea>
-				<button type="submit" class="ae-btn ae-btn--primary ae-btn--lg" id="guide-send">
+				<button type="submit" class="ae-btn ae-btn--primary ae-btn--lg" id="guide-send" disabled>
 					Send
 				</button>
 			</form>
@@ -85,7 +94,6 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 				<a href="/facts">how this site handles data</a>. Prefer not to talk
 				to a model at all? <a href="/act">Skip straight to the action list</a>.
 			</p>
-			<div id="guide-turnstile" data-sitekey={turnstileSiteKey}></div>
 		</div>
 	</section>
 </Page>
@@ -164,6 +172,8 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 		text: string;
 	}
 
+	const verifyWrap = document.querySelector<HTMLDivElement>("#guide-verify");
+
 	const form = document.querySelector<HTMLFormElement>("#guide-form");
 	const input = document.querySelector<HTMLTextAreaElement>("#guide-input");
 	const sendBtn = document.querySelector<HTMLButtonElement>("#guide-send");
@@ -173,6 +183,51 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 
 	const history: Turn[] = [];
 	let busy = false;
+	// Not read from the DOM: the textarea's markup placeholder is
+	// "Verifying you're human…" until the gate below clears, so the real
+	// placeholder has to live here instead.
+	const READY_PLACEHOLDER = "Your town, what you're good at, or just say hi";
+
+	// ---- Verify before you can type a word ------------------------------
+	// The old flow rendered Turnstile lazily, on first send — a person could
+	// type a whole message before ever learning a check existed, then watch
+	// "Thinking…" sit there while an easy-to-miss checkbox waited below.
+	// Gating the textbox itself up front makes the check impossible to miss
+	// and impossible to type past. This first pass only proves "a human is
+	// here" — every actual send still mints its own fresh token below
+	// (getTurnstileToken never caches one), so redeeming this one doesn't
+	// let a later API call skip verification.
+	async function verifyBeforeTyping() {
+		if (!turnstileSiteKey) {
+			// No widget configured client-side at all. The server fails closed
+			// regardless (api/guide.ts, api/speech.ts) — a client-side gate with
+			// nothing to gate on would just lock out local dev for no reason.
+			if (input) {
+				input.disabled = false;
+				input.placeholder = READY_PLACEHOLDER;
+			}
+			if (sendBtn) sendBtn.disabled = false;
+			return;
+		}
+		if (status) status.textContent = "Verifying you're human…";
+		if (verifyWrap) verifyWrap.hidden = false;
+		try {
+			await getTurnstileToken();
+			if (status) status.textContent = "Ready when you are.";
+		} catch {
+			if (status) status.textContent = "Couldn't verify you're human — reload the page to try again.";
+			return;
+		} finally {
+			if (verifyWrap) verifyWrap.hidden = true;
+		}
+		if (input) {
+			input.disabled = false;
+			input.placeholder = READY_PLACEHOLDER;
+		}
+		if (sendBtn) sendBtn.disabled = false;
+	}
+
+	void verifyBeforeTyping();
 
 	// ---- Suggested prompts, seeded from a disclosed, throwaway location
 	// guess (src/pages/api/geo.ts). Never a claim, always a guess the
@@ -286,20 +341,69 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 		});
 	});
 
+	// Bare URLs turned into real links — never raw HTML. The system prompt
+	// asks the model to say "I found this via <url>" when it cites a search
+	// result, so a reply that never becomes clickable would undercut its own
+	// checkability. Built from text/anchor nodes only, never innerHTML: the
+	// text here is a live model's output, not something to trust with markup.
+	const URL_RE = /(https?:\/\/[^\s<>"')]+)/g;
+
+	function renderReplyText(el: HTMLParagraphElement, text: string) {
+		el.textContent = "";
+		let lastIndex = 0;
+		for (const match of text.matchAll(URL_RE)) {
+			const url = match[0];
+			const start = match.index ?? 0;
+			if (start > lastIndex) el.appendChild(document.createTextNode(text.slice(lastIndex, start)));
+			const a = document.createElement("a");
+			a.href = url;
+			a.textContent = url;
+			a.target = "_blank";
+			a.rel = "noopener noreferrer";
+			el.appendChild(a);
+			lastIndex = start + url.length;
+		}
+		if (lastIndex < text.length) el.appendChild(document.createTextNode(text.slice(lastIndex)));
+	}
+
+	function appendCursor(el: HTMLParagraphElement) {
+		const cursor = document.createElement("span");
+		cursor.className = "ae-guide-cursor";
+		cursor.setAttribute("aria-hidden", "true");
+		cursor.textContent = "▍";
+		el.appendChild(cursor);
+	}
+
+	// Which row's "reading aloud" pill is currently shown — at most one at a
+	// time, matching currentSpeech being a single global handle.
+	let speakingRow: HTMLDivElement | null = null;
+	function showSpeakingIndicator(row: HTMLDivElement | null) {
+		speakingRow = row;
+		const btn = row?.querySelector<HTMLButtonElement>(".ae-guide-turn-speaking");
+		if (btn) btn.hidden = false;
+	}
+	function hideSpeakingIndicator() {
+		const btn = speakingRow?.querySelector<HTMLButtonElement>(".ae-guide-turn-speaking");
+		if (btn) btn.hidden = true;
+		speakingRow = null;
+	}
+
 	// Speaks the finished reply. Never blocks the conversation — a person can
 	// send the next message while the last reply is still being read aloud,
 	// same as jacquard. Silent fallback to the text-pulse already shown while
 	// streaming if speech isn't configured or the call fails; nothing is
 	// lost, the reply is already on screen either way.
-	async function sayItOutLoud(text: string) {
+	async function sayItOutLoud(text: string, row: HTMLDivElement | null) {
 		currentSpeech?.cancel();
 		currentSpeech = null;
+		hideSpeakingIndicator();
 		if (muted || !text.trim()) return;
 		try {
 			const token = await getTurnstileToken();
 			const handle = await speak(text, token, setLevelAndSpectrum);
 			currentSpeech = handle;
 			setOrbConversationState("speaking");
+			showSpeakingIndicator(row);
 			await handle.done;
 			if (currentSpeech === handle) {
 				currentSpeech = null;
@@ -307,18 +411,41 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 			}
 		} catch {
 			/* no voice this time — the text is already on screen */
+		} finally {
+			hideSpeakingIndicator();
 		}
 	}
 
-	function addTurn(role: Turn["role"], text: string): HTMLDivElement {
+	function addTurn(role: Turn["role"], text: string): { row: HTMLDivElement; textEl: HTMLParagraphElement } {
 		const row = document.createElement("div");
 		row.className = role === "user" ? "ae-guide-turn ae-guide-turn--you" : "ae-guide-turn";
+
+		const label = document.createElement("span");
+		label.className = "ae-guide-turn-label";
+		label.textContent = role === "user" ? "You" : "The guide";
+		row.appendChild(label);
+
 		const p = document.createElement("p");
-		p.textContent = text;
+		renderReplyText(p, text);
 		row.appendChild(p);
+
+		if (role === "assistant") {
+			const speakingBtn = document.createElement("button");
+			speakingBtn.type = "button";
+			speakingBtn.className = "ae-guide-turn-speaking";
+			speakingBtn.hidden = true;
+			speakingBtn.textContent = "🔊 Reading aloud — stop";
+			speakingBtn.addEventListener("click", () => {
+				currentSpeech?.cancel();
+				currentSpeech = null;
+				hideSpeakingIndicator();
+			});
+			row.appendChild(speakingBtn);
+		}
+
 		transcript?.appendChild(row);
 		if (transcript) transcript.scrollTop = transcript.scrollHeight;
-		return row;
+		return { row, textEl: p };
 	}
 
 	// A slow decay loop keeps the orb from freezing mid-pulse between text
@@ -343,8 +470,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 		setOrbConversationState("thinking");
 		if (status) status.textContent = "Thinking…";
 
-		const replyEl = addTurn("assistant", "");
-		const replyP = replyEl.querySelector("p");
+		const { row: replyRow, textEl: replyP } = addTurn("assistant", "");
 		let replyText = "";
 
 		try {
@@ -352,7 +478,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 			try {
 				turnstileToken = await getTurnstileToken();
 			} catch {
-				if (replyP) replyP.textContent = "Couldn't verify you're human — reload the page and try again.";
+				replyP.textContent = "Couldn't verify you're human — reload the page and try again.";
 				return;
 			}
 
@@ -364,7 +490,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 
 			if (!res.ok || !res.body) {
 				const err = await res.json().catch(() => ({ error: "Something went wrong." }));
-				if (replyP) replyP.textContent = err.error ?? "Something went wrong.";
+				replyP.textContent = err.error ?? "Something went wrong.";
 				setOrbConversationState("idle");
 				if (status) status.textContent = "Ready when you are.";
 				return;
@@ -373,6 +499,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 			const reader = res.body.getReader();
 			const decoder = new TextDecoder();
 			let buffer = "";
+			let errored = false;
 
 			for (;;) {
 				const { done, value } = await reader.read();
@@ -398,19 +525,32 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 						if (status) status.textContent = "…";
 					} else if (event === "text") {
 						replyText += data.text;
-						if (replyP) replyP.textContent = replyText;
+						renderReplyText(replyP, replyText);
+						appendCursor(replyP);
 						pulseFromText(data.text);
 						if (transcript) transcript.scrollTop = transcript.scrollHeight;
 					} else if (event === "error") {
-						if (replyP) replyP.textContent = data.message;
+						// A guardrail can fire mid-stream (see api/guide.ts) after
+						// some safe text has already arrived — this replaces the
+						// whole bubble with the refusal rather than appending to
+						// it, so nothing before the line gets crossed stays on
+						// screen next to it.
+						errored = true;
+						replyP.textContent = data.message;
 					}
 				}
 			}
 
-			history.push({ role: "assistant", text: replyText });
-			void sayItOutLoud(replyText);
+			if (!errored) {
+				// Final render, cursor-free — the loop above leaves a blinking
+				// cursor on every chunk since it can't tell "more is coming"
+				// from "that was the last one" until the stream actually ends.
+				renderReplyText(replyP, replyText);
+				history.push({ role: "assistant", text: replyText });
+				void sayItOutLoud(replyText, replyRow);
+			}
 		} catch {
-			if (replyP) replyP.textContent = "Couldn't reach the guide — check your connection and try again.";
+			replyP.textContent = "Couldn't reach the guide — check your connection and try again.";
 		} finally {
 			if (!currentSpeech) setOrbConversationState("idle");
 			if (status) status.textContent = "Ready when you are.";
@@ -572,16 +712,67 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 		max-width: 85%;
 	}
 
+	.ae-guide-turn-label {
+		display: block;
+		font-size: 11px;
+		font-weight: 600;
+		letter-spacing: var(--ae-tracking-chip);
+		text-transform: uppercase;
+		color: var(--ae-muted);
+		margin-bottom: 4px;
+	}
+
+	.ae-guide-turn--you .ae-guide-turn-label {
+		color: var(--ae-indigo-ink);
+	}
+
 	.ae-guide-turn p {
 		font-size: 16px;
 		line-height: 1.6;
 		white-space: pre-wrap;
 	}
 
+	.ae-guide-turn p a {
+		color: var(--ae-indigo-ink);
+	}
+
+	.ae-guide-cursor {
+		display: inline-block;
+		animation: ae-guide-blink 1s steps(1) infinite;
+	}
+
+	@keyframes ae-guide-blink {
+		50% {
+			opacity: 0;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.ae-guide-cursor {
+			animation: none;
+		}
+	}
+
 	.ae-guide-turn--you {
 		align-self: flex-end;
 		background: var(--ae-indigo-wash);
 		border-color: var(--ae-indigo);
+	}
+
+	.ae-guide-turn-speaking {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		margin-top: 10px;
+		padding: 4px 12px;
+		border-radius: 999px;
+		border: 1px solid var(--ae-madder);
+		background: var(--ae-madder-wash);
+		color: var(--ae-madder);
+		font-family: var(--ae-sans);
+		font-size: 12px;
+		font-weight: 600;
+		cursor: pointer;
 	}
 
 	.ae-guide-form {
@@ -608,9 +799,23 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 		outline-offset: 2px;
 	}
 
+	.ae-guide-verify {
+		margin-top: 26px;
+		padding: 16px;
+		border-radius: 10px;
+		border: 1px dashed var(--ae-line-strong);
+		background: var(--ae-card);
+	}
+
+	.ae-guide-verify-hint {
+		font-size: 13px;
+		color: var(--ae-muted);
+		margin: 0;
+	}
+
 	/* Empty and invisible unless Cloudflare decides an interactive challenge
 	 * is actually needed — appearance: "interaction-only" in the script below. */
 	#guide-turnstile:not(:empty) {
-		margin-top: 16px;
+		margin-top: 12px;
 	}
 </style>
