@@ -248,10 +248,9 @@ managed certificates (`mc-ae-apex-v3`, `mc-cae-platform-www-automate-eth-5125`)
 as of 2026-08-30 — `astro.config.mjs`'s canonical `site` correctly matches
 the live apex.
 
-Repository secrets required for deploy — **none of these are set yet** (a
-tool-permission guard blocked writing them from an automated session, by
-design; they need to be set by hand, once, via `gh secret set <name>` or the
-repo's Settings → Secrets UI):
+Repository secrets required for deploy (`gh secret set <name>` or the repo's
+Settings → Secrets UI — always piped directly from wherever the value lives,
+never typed in by hand):
 
 | Secret | Value |
 |---|---|
@@ -263,9 +262,15 @@ repo's Settings → Secrets UI):
 | `OPENAI_API_KEY` | optional — powers the guide's voice; text works without it |
 | `TURNSTILE_SECRET_KEY` | required — without it, both `/api/guide` and `/api/speech` refuse to run, even if the two keys above are set |
 | `PUBLIC_TURNSTILE_SITE_KEY` | required (build-arg, not a runtime secret — see the guide's section above) — the widget never renders without it, which has the same fail-closed effect from the other direction |
+| `SENTRY_DSN` | optional — server-side error tracking for the three on-demand routes ([`src/lib/sentry.ts`](src/lib/sentry.ts), `@sentry/node` only, no browser SDK); silently no-ops without it |
 
-None of the four AI/verification secrets are set on the live container yet
-either, as of this writing — the guide currently answers `503` in production.
+A note on `import.meta.env` vs `process.env` for anything in this table: the
+Node-adapter server bundle statically inlines non-`PUBLIC_`-prefixed
+`import.meta.env.X` reads at *build* time, same as it does for
+`PUBLIC_`-prefixed client vars — it is not a dynamic runtime read. Every
+secret above except `PUBLIC_TURNSTILE_SITE_KEY` is read via `process.env.X`
+in the route/lib code specifically so a value set only at container runtime
+(the whole point of a Container Apps secret) is actually seen.
 
 Until `AZURE_CLIENT_ID`/`AZURE_TENANT_ID`/`AZURE_SUBSCRIPTION_ID`/`PLATFORM_ACR`
 are set, the deploy workflow's `azure/login` step fails immediately — it
