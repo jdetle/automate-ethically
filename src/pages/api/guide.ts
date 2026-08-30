@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import Anthropic from "@anthropic-ai/sdk";
 import { budgetRemaining, clientIp, rateLimited, spend, verifyTurnstile } from "../../lib/api-limits";
+import { verifySessionToken } from "../../lib/guide-session";
 import {
 	detectOutputViolation,
 	INJECTION_REINFORCEMENT,
@@ -81,7 +82,7 @@ function sseLine(event: string, data: unknown): string {
 }
 
 export const POST: APIRoute = async ({ request, clientAddress }) => {
-	let body: { message?: string; history?: Turn[]; turnstileToken?: string };
+	let body: { message?: string; history?: Turn[]; turnstileToken?: string; sessionToken?: string };
 	try {
 		body = await request.json();
 	} catch {
@@ -112,7 +113,15 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 			{ status: 503, headers: { "Content-Type": "application/json" } },
 		);
 	}
-	if (!(await verifyTurnstile(body.turnstileToken, turnstileSecret, ip))) {
+	// A session token (issued by /api/session, which redeems a real Turnstile
+	// token) is the normal path — a visitor clears one challenge per session
+	// instead of one per message. A raw Turnstile token is still accepted for
+	// a caller that goes straight to this route. Either way something had to
+	// pass a real Cloudflare challenge first; the bar is unchanged.
+	const verified =
+		verifySessionToken(body.sessionToken, turnstileSecret) ||
+		(await verifyTurnstile(body.turnstileToken, turnstileSecret, ip));
+	if (!verified) {
 		return new Response(JSON.stringify({ error: "Verification failed — reload the page and try again." }), {
 			status: 403,
 			headers: { "Content-Type": "application/json" },

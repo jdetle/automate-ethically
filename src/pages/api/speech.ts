@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { budgetRemaining, clientIp, spend, verifyTurnstile } from "../../lib/api-limits";
+import { verifySessionToken } from "../../lib/guide-session";
 import { initSentry, Sentry } from "../../lib/sentry";
 
 export const prerender = false;
@@ -40,7 +41,7 @@ export const GET: APIRoute = async () => {
 };
 
 export const POST: APIRoute = async ({ request, clientAddress }) => {
-	let body: { text?: string; turnstileToken?: string };
+	let body: { text?: string; turnstileToken?: string; sessionToken?: string };
 	try {
 		body = await request.json();
 	} catch {
@@ -63,7 +64,13 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 			headers: { "Content-Type": "application/json" },
 		});
 	}
-	if (!(await verifyTurnstile(body.turnstileToken, turnstileSecret, ip))) {
+	// Session token first (see lib/guide-session.ts): speech runs after every
+	// spoken reply, so requiring a fresh Turnstile token here was half of why
+	// a visitor got challenged constantly.
+	const verified =
+		verifySessionToken(body.sessionToken, turnstileSecret) ||
+		(await verifyTurnstile(body.turnstileToken, turnstileSecret, ip));
+	if (!verified) {
 		return new Response(JSON.stringify({ error: "verification failed" }), {
 			status: 403,
 			headers: { "Content-Type": "application/json" },

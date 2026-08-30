@@ -89,7 +89,7 @@ test.describe("/guide — verify-then-chat flow", () => {
 		expect(consoleErrors, `Unexpected browser console errors:\n${consoleErrors.join("\n")}`).toEqual([]);
 	});
 
-	test("the widget is visible whenever a token is being minted, including on send", async ({ page }) => {
+	test("the widget is visible while a challenge is outstanding", async ({ page }) => {
 		// The production bug this catches: #guide-turnstile lives inside
 		// #guide-verify, which the page-load check hides once it clears. Every
 		// later token request (each send mints its own) then ran against a
@@ -99,31 +99,67 @@ test.describe("/guide — verify-then-chat flow", () => {
 		// and got "Couldn't verify you're human" from a challenge that had
 		// nowhere to render.
 		//
-		await page.goto("/guide");
-
-		const input = page.locator("#guide-input");
-		const verifyWrap = page.locator("#guide-verify");
-
-		// Let the page-load check finish normally. The old code hid the
-		// wrapper permanently at this point.
-		await expect(input).toBeEnabled({ timeout: 20_000 });
-		await expect(verifyWrap).toBeHidden();
-
-		// Make the *next* token request hang instead of resolving, so the
-		// in-flight state is observable rather than a race. A real managed
-		// widget waiting on a human to click its checkbox is in exactly this
-		// state — pending, and useless unless it is on screen.
-		await page.evaluate(() => {
-			const w = window as unknown as { turnstile?: { execute: (id: string) => void } };
-			if (w.turnstile) w.turnstile.execute = () => {};
+		// A stub widget whose challenge never resolves, standing in for a real
+		// managed widget waiting on a human to click its checkbox — pending,
+		// and impossible to satisfy unless it is actually on screen. Stubbed
+		// rather than driven for real because Cloudflare's own script cannot
+		// be made to hold a challenge open on demand.
+		await page.route("https://challenges.cloudflare.com/**", (route) => route.abort());
+		await page.addInitScript(() => {
+			(window as unknown as { turnstile: unknown }).turnstile = {
+				render: () => "stub-widget",
+				execute: () => {
+					/* never calls back: the challenge stays open */
+				},
+				reset: () => {},
+			};
 		});
 
-		await input.fill("hi");
-		await page.locator("#guide-send").click();
+		await page.goto("/guide");
 
-		// The regression: this must be visible while the send's token request
-		// is outstanding, or a challenge that needs a click can never get one.
-		await expect(verifyWrap).toBeVisible({ timeout: 10_000 });
+		// The regression: while a challenge is outstanding its container must
+		// be visible. The old code hid it for good after the first check, so
+		// any later challenge had nowhere to render and could never be
+		// completed.
+		await expect(page.locator("#guide-verify")).toBeVisible({ timeout: 20_000 });
+		await expect(page.locator("#guide-input")).toBeDisabled();
+	});
+
+	test("verifies once per session, not once per message", async ({ page }) => {
+		// The reported symptom, verbatim: "turnstile verifies after every input
+		// and doesn't ever return a response." The old design minted a fresh
+		// Turnstile token for every API call — one per message, plus one per
+		// spoken reply. Cloudflare's managed widget reads that repetition as
+		// scripted traffic and escalates to interactive challenges, so a real
+		// person got a checkbox in front of every message.
+		//
+		// Counting /api/session calls is the precise assertion: it is the only
+		// place a Turnstile token is redeemed, so one call across a whole
+		// multi-message conversation means one challenge.
+		let sessionCalls = 0;
+		page.on("request", (req) => {
+			if (new URL(req.url()).pathname === "/api/session") sessionCalls += 1;
+		});
+
+		await page.goto("/guide");
+		const input = page.locator("#guide-input");
+		const sendBtn = page.locator("#guide-send");
+
+		await expect(input).toBeEnabled({ timeout: 20_000 });
+		expect(sessionCalls, "page load should verify exactly once").toBe(1);
+
+		for (const message of ["first message", "second message", "third message"]) {
+			await input.fill(message);
+			await sendBtn.click();
+			await expect(page.locator(".ae-guide-turn--you", { hasText: message })).toBeVisible();
+			await expect(sendBtn).toBeEnabled({ timeout: 30_000 });
+
+			const reply = await page.locator(".ae-guide-turn:not(.ae-guide-turn--you) p").last().textContent();
+			expect(reply ?? "").not.toMatch(/Couldn't verify|Verification failed/);
+		}
+
+		// The whole point: three messages, still one challenge.
+		expect(sessionCalls, "sending messages must not re-trigger verification").toBe(1);
 	});
 
 	test("a Turnstile failure is shown as a fail-closed message, never a silent hang", async ({ page }) => {
