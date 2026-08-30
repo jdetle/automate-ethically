@@ -55,6 +55,10 @@ http {
     # but calling it too often is a bad neighbor. Once per page load is the
     # real usage; this just keeps a reload-spammer from hammering it.
     limit_req_zone $http_x_forwarded_for zone=geo:1m rate=6r/m;
+    # /api/session redeems a Turnstile token for a 30-minute session, so a
+    # normal visitor hits it about once. Slightly roomier than the paid routes
+    # only to tolerate a reload or an expired session mid-conversation.
+    limit_req_zone $http_x_forwarded_for zone=session:1m rate=10r/m;
     limit_req_status 429;
 
     gzip on;
@@ -124,6 +128,24 @@ http {
         # the Node process docker-entrypoint.sh starts alongside nginx (see
         # that file). Streamed (SSE), so buffering has to be off or the whole
         # response would arrive in one burst at the end instead of live.
+        # Trades a verified Turnstile token for a short-lived session token
+        # (src/pages/api/session.ts). This is where a challenge is actually
+        # redeemed; /api/guide and /api/speech then accept the session token,
+        # so a visitor is challenged once per session, not once per message.
+        location = /api/session {
+            include /etc/nginx/security-headers.conf;
+
+            limit_except POST { deny all; }
+            limit_req zone=session burst=3 nodelay;
+            client_max_body_size 8k;
+
+            proxy_pass http://127.0.0.1:8081;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Forwarded-For $http_x_forwarded_for;
+            proxy_set_header Connection "";
+        }
+
         location = /api/guide {
             include /etc/nginx/security-headers.conf;
 

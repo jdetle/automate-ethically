@@ -113,7 +113,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 
 	const VOICE_KEY = "ae-guide-voice";
 
-	// ---- Turnstile: one fresh token per API call, never reused ----------
+	// ---- Turnstile: one challenge per session (see ensureSession below) --
 	declare global {
 		interface Window {
 			turnstile?: {
@@ -215,7 +215,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 		return true;
 	}
 
-	/** Mints one fresh token. Never cached, never reused across calls. */
+	/** Mints one fresh Turnstile token. Only ensureSession() should call this. */
 	async function getTurnstileToken(): Promise<string> {
 		const ready = await waitForTurnstile();
 		return new Promise((resolve, reject) => {
@@ -241,6 +241,55 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 				}
 			}, 15000);
 		});
+	}
+
+	// ---- Session: clear one challenge, not one per message ---------------
+	// The guide used to mint a fresh Turnstile token for every API call — one
+	// per message, plus another for every spoken reply. Cloudflare's managed
+	// widget reads that repetition as scripted traffic and escalates to
+	// interactive challenges, so a real person got a checkbox in front of
+	// every single message and the conversation never went anywhere. Now one
+	// Turnstile pass is traded at /api/session for a short-lived signed token
+	// (see lib/guide-session.ts) that the paid routes accept.
+	let sessionToken: string | null = null;
+	let sessionExpiresAt = 0;
+	let sessionInFlight: Promise<string> | null = null;
+
+	async function requestSession(): Promise<string> {
+		const turnstileToken = await getTurnstileToken();
+		const res = await fetch("/api/session", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ turnstileToken }),
+		});
+		if (!res.ok) throw new Error("session request failed");
+		const data = (await res.json()) as { sessionToken?: string; expiresAt?: number };
+		if (!data.sessionToken) throw new Error("session request returned nothing");
+		sessionToken = data.sessionToken;
+		// Renew a minute early so a request can't set out with a token that
+		// expires in flight.
+		sessionExpiresAt = (data.expiresAt ?? Date.now()) - 60_000;
+		return data.sessionToken;
+	}
+
+	/**
+	 * Returns a valid session token, verifying with Turnstile only when there
+	 * isn't one. Concurrent callers share a single in-flight request rather
+	 * than each firing their own challenge.
+	 */
+	function ensureSession(): Promise<string> {
+		if (sessionToken && Date.now() < sessionExpiresAt) return Promise.resolve(sessionToken);
+		if (sessionInFlight) return sessionInFlight;
+		sessionInFlight = requestSession().finally(() => {
+			sessionInFlight = null;
+		});
+		return sessionInFlight;
+	}
+
+	/** Drops the current session so the next call re-verifies from scratch. */
+	function invalidateSession() {
+		sessionToken = null;
+		sessionExpiresAt = 0;
 	}
 
 	interface Turn {
@@ -287,7 +336,9 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 		// Visibility is getTurnstileToken()'s job now, for every call — not
 		// just this one. See setVerifyVisible() for why that matters.
 		try {
-			await getTurnstileToken();
+			// One challenge, traded for a session that covers the whole
+			// conversation — messages and spoken replies alike.
+			await ensureSession();
 			if (status) status.textContent = "Ready when you are.";
 		} catch {
 			if (status) status.textContent = "Couldn't verify you're human — reload the page to try again.";
@@ -472,8 +523,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 		hideSpeakingIndicator();
 		if (muted || !text.trim()) return;
 		try {
-			const token = await getTurnstileToken();
-			const handle = await speak(text, token, setLevelAndSpectrum);
+			const handle = await speak(text, await ensureSession(), setLevelAndSpectrum);
 			currentSpeech = handle;
 			setOrbConversationState("speaking");
 			showSpeakingIndicator(row);
@@ -547,19 +597,34 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 		let replyText = "";
 
 		try {
-			let turnstileToken: string;
+			let session: string;
 			try {
-				turnstileToken = await getTurnstileToken();
+				session = await ensureSession();
 			} catch {
 				replyP.textContent = "Couldn't verify you're human — reload the page and try again.";
 				return;
 			}
 
-			const res = await fetch("/api/guide", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ message, history: history.slice(0, -1), turnstileToken }),
-			});
+			const post = (token: string) =>
+				fetch("/api/guide", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ message, history: history.slice(0, -1), sessionToken: token }),
+				});
+
+			let res = await post(session);
+			// A session can lapse mid-conversation (expiry, or a container
+			// restart). Re-verify once and retry rather than making the
+			// visitor reload and lose the thread.
+			if (res.status === 403) {
+				invalidateSession();
+				try {
+					res = await post(await ensureSession());
+				} catch {
+					replyP.textContent = "Couldn't verify you're human — reload the page and try again.";
+					return;
+				}
+			}
 
 			if (!res.ok || !res.body) {
 				const err = await res.json().catch(() => ({ error: "Something went wrong." }));

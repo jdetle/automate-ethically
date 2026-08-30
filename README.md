@@ -85,6 +85,14 @@ other page is still plain prerendered HTML; see the adapter note in
   plainly when a search finds nothing — the same anti-hallucination
   discipline FACTS.md holds the rest of the site to, applied to a model that
   can otherwise sound confident while being wrong.
+- **Verified once per session, not once per message.** One Turnstile pass is
+  traded at `/api/session` for a short-lived signed token
+  ([`src/lib/guide-session.ts`](src/lib/guide-session.ts)) that `/api/guide`
+  and `/api/speech` accept. The earlier design minted a fresh Turnstile token
+  per API call — one per message plus one per spoken reply — which Cloudflare's
+  managed widget correctly reads as scripted traffic and answers with an
+  interactive challenge in front of every single message. The security bar is
+  unchanged: nothing reaches a paid API without a real Turnstile pass first.
 - **A system prompt is an instruction, not a guarantee.**
   `src/lib/guide-guardrails.ts` is the code-level backstop: an input
   heuristic that quietly flags likely jailbreak phrasing (logged, never
