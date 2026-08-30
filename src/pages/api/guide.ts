@@ -270,9 +270,11 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 							// on the first question and reported "my search isn't
 							// working right now" to visitors, which read as a
 							// broken feature when it was really a starved one.
-							// The per-conversation and daily budgets above are
-							// what bound cost; this only bounds one reply.
-							max_uses: 10,
+							// Even 10 was marginal in testing — one question could
+							// still trip the limit mid-answer. The per-conversation
+							// and daily budgets above are what bound cost; this only
+							// bounds a single reply.
+							max_uses: 20,
 						},
 					],
 				});
