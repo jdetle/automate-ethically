@@ -25,10 +25,18 @@ FROM public.ecr.aws/nginx/nginx:alpine
 # Full config replacement: the stock config listens on 80 as root. This one
 # listens on 8080 and keeps pid/temp files in /tmp so the nginx user can run
 # the whole thing.
-COPY nginx.conf /etc/nginx/nginx.conf
+#
+# The config ships as a template because the s10 ingest credential is injected
+# at container start from a Container Apps secret. Baking it into the image
+# would put a live credential in every layer in the registry.
+COPY nginx.conf.template /etc/nginx/nginx.conf.template
+COPY nginx-security-headers.conf /etc/nginx/security-headers.conf
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 COPY --from=build /app/dist /usr/share/nginx/html
 
 USER nginx
 EXPOSE 8080
 
-CMD ["nginx", "-g", "daemon off;"]
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

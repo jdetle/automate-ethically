@@ -38,12 +38,9 @@ import Stitch from "../components/Stitch.astro";
 	-->
 	<link rel="stylesheet" href="/pagefind/pagefind-ui.css" />
 	<script is:inline src="/pagefind/pagefind-ui.js"></script>
-	<script is:inline>
-		window.addEventListener("DOMContentLoaded", () => {
-			if (typeof PagefindUI === "undefined") return;
-			new PagefindUI({ element: "#search", showSubResults: true });
-		});
-	</script>
+	<!-- Init lives in public/search-init.js so script-src can stay 'self'
+	     with no 'unsafe-inline'. -->
+	<script is:inline src="/search-init.js"></script>
 </Page>
 
 <style>

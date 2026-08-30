@@ -1,6 +1,11 @@
 # Serves the built Astro site on 8080 as the non-root nginx user.
 # pid and temp paths live in /tmp because /var/run and /var/cache/nginx are
 # not writable once USER nginx drops privileges.
+#
+# This is a TEMPLATE, not a config: docker-entrypoint.sh substitutes
+# __S10_INGEST_KEY__ at container start and writes the result to /tmp. The
+# ingest credential therefore lives in a Container Apps secret and reaches
+# only this process — never the image, never the repository, never a browser.
 worker_processes auto;
 pid /tmp/nginx.pid;
 error_log /dev/stderr warn;
@@ -12,6 +17,10 @@ events {
 http {
     include /etc/nginx/mime.types;
     default_type application/octet-stream;
+
+    # Do not advertise the nginx version to every caller; a version string is
+    # free reconnaissance for anyone matching against known CVEs.
+    server_tokens off;
 
     # $http_x_forwarded_for is the real client — ACA's Envoy ingress fronts
     # this container, so $remote_addr is always the ingress hop. This log
@@ -31,6 +40,12 @@ http {
     uwsgi_temp_path /tmp/uwsgi_temp;
     scgi_temp_path /tmp/scgi_temp;
 
+    # The telemetry relay is the only path that reaches a backend, so it is
+    # the only path worth flooding. Keyed on the forwarded client rather than
+    # $remote_addr, which is always the ingress.
+    limit_req_zone $http_x_forwarded_for zone=telemetry:1m rate=30r/m;
+    limit_req_status 429;
+
     gzip on;
     gzip_vary on;
     gzip_min_length 1024;
@@ -43,12 +58,10 @@ http {
         root /usr/share/nginx/html;
         index index.html;
 
-        add_header X-Content-Type-Options "nosniff" always;
-        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
-
         # Astro fingerprints everything under /_astro/, so those files can be
         # cached forever; a content change produces a new hash and a new URL.
         location /_astro/ {
+            include /etc/nginx/security-headers.conf;
             add_header Cache-Control "public, max-age=31536000, immutable";
             try_files $uri =404;
         }
@@ -56,31 +69,50 @@ http {
         # Committed PDFs and the QR/OG images change occasionally, not never —
         # an hour and a day of staleness are both fine, a year is not.
         location /downloads/ {
+            include /etc/nginx/security-headers.conf;
             add_header Cache-Control "public, max-age=3600, must-revalidate";
             try_files $uri =404;
         }
 
         location /og/ {
+            include /etc/nginx/security-headers.conf;
             add_header Cache-Control "public, max-age=86400";
             try_files $uri =404;
         }
 
-        # TODO(s10 tenant): the pageview beacon in Base.astro posts here. This
-        # proxies to the public ingest FQDN; if ca-automate-ethically and
-        # ca-s10-ingest share the cae-platform environment, prefer internal
-        # CAE DNS (http://ca-s10-ingest) once confirmed reachable — avoids an
-        # unnecessary public round trip. Deliberately not called `/_s10/` or
-        # otherwise obfuscated: a site arguing against unaccountable
-        # automated systems should stay easy to block, not evade blockers.
-        location /telemetry/ {
-            proxy_pass https://ca-s10-ingest.purplewave-fe0ae338.eastus2.azurecontainerapps.io/;
+        # The pageview beacon in Base.astro posts here, and this is where the
+        # ingest credential is attached — server side, where a secret can
+        # actually stay secret. Deliberately not called `/_s10/` or otherwise
+        # obfuscated: a site arguing against unaccountable automated systems
+        # should stay easy to block, not evade blockers.
+        #
+        # Scoped to the exact endpoint and method the beacon uses. The old
+        # `location /telemetry/` prefix relayed any method and any path to the
+        # ingest service, which made this site a free amplifier for anyone who
+        # found it.
+        location = /telemetry/v2/envelopes {
+            include /etc/nginx/security-headers.conf;
+
+            limit_except POST { deny all; }
+            limit_req zone=telemetry burst=10 nodelay;
+            client_max_body_size 4k;
+
+            # Forward nothing the caller sent. Without this a client could
+            # smuggle its own Authorization, cookies, or forged forwarding
+            # headers straight through to the ingest backend.
+            proxy_pass_request_headers off;
             proxy_set_header Host ca-s10-ingest.purplewave-fe0ae338.eastus2.azurecontainerapps.io;
+            proxy_set_header Content-Type "application/x-ndjson";
+            proxy_set_header Authorization "Bearer __S10_INGEST_KEY__";
+
             proxy_ssl_server_name on;
+            proxy_pass https://ca-s10-ingest.purplewave-fe0ae338.eastus2.azurecontainerapps.io/v2/envelopes;
         }
 
         # HTML is the one thing whose URL never changes when its content does,
         # so it must revalidate on every load.
         location / {
+            include /etc/nginx/security-headers.conf;
             add_header Cache-Control "no-cache";
             try_files $uri $uri/index.html =404;
         }

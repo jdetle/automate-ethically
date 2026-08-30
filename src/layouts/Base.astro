@@ -14,11 +14,6 @@ interface Props {
 const { title, description, ogImage = "/og/default.png" } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const ogImageUrl = new URL(ogImage, Astro.site);
-
-// Baked in at build time from a repo secret once the s10 tenant is
-// registered (see README). Empty until then — the beacon just no-ops rather
-// than firing unauthenticated requests at production.
-const s10IngestKey = import.meta.env.PUBLIC_S10_INGEST_KEY ?? "";
 ---
 
 <!doctype html>
@@ -46,35 +41,9 @@ const s10IngestKey = import.meta.env.PUBLIC_S10_INGEST_KEY ?? "";
 		<a class="ae-skip" href="#main">Skip to content</a>
 		<div class="ae-weave" aria-hidden="true"></div>
 		<slot />
-		<script define:vars={{ s10IngestKey }}>
-			// Pageview beacon only — no persistent identifier, no DOM capture, no
-			// third-party origin. Posts to our own /telemetry/ proxy, which nginx
-			// forwards to our own s10 tenant. See README's Analytics section.
-			// No-ops entirely until an ingest key is baked in at build time.
-			(() => {
-				if (!s10IngestKey) return;
-				try {
-					const envelope = {
-						kind: "pageview",
-						tenant: "automate-ethically",
-						path: location.pathname,
-						referrer: document.referrer || null,
-						screen_bucket:
-							innerWidth < 480 ? "mobile" : innerWidth < 1024 ? "tablet" : "desktop",
-					};
-					fetch("/telemetry/v2/envelopes", {
-						method: "POST",
-						headers: {
-							"Content-Type": "application/x-ndjson",
-							Authorization: `Bearer ${s10IngestKey}`,
-						},
-						body: `${JSON.stringify(envelope)}\n`,
-						keepalive: true,
-					}).catch(() => {});
-				} catch {
-					// analytics must never break the page
-				}
-			})();
-		</script>
+		<!-- Beacon is a separate same-origin file, never inline: Astro inlines
+		     small bundled scripts, and anything inline would force
+		     'unsafe-inline' into script-src and hollow out the CSP. -->
+		<script src="/beacon.js" defer is:inline></script>
 	</body>
 </html>

@@ -77,9 +77,21 @@ Concretely:
   bucket) to `/telemetry/` on our own origin, which nginx proxies to
   `ca-s10-ingest`. The path is intentionally not obfuscated — an ad-blocker
   that blocks it should block it; the footer says so.
-- **Known accepted risk:** the ingest key baked into the static bundle is
-  world-readable, and s10 has no per-tenant rate limit beyond its cardinality
-  guard. Junk envelopes are possible. Acceptable at this site's traffic scale.
+- **The ingest key is never sent to the browser.** The beacon posts
+  unauthenticated to our own origin; nginx attaches
+  `Authorization: Bearer …` on the way out, reading the key from the
+  `S10_INGEST_KEY` Container Apps secret at container start
+  (`docker-entrypoint.sh` renders `nginx.conf.template`). The key is therefore
+  absent from the page, from git, and from the image layers. An earlier
+  revision baked it into the static bundle via `PUBLIC_S10_INGEST_KEY` and
+  documented that as an accepted risk; it is not one, because a published
+  credential is a credential anyone can use, and it was replaced rather than
+  accepted.
+- The relay is scoped to exactly `POST /telemetry/v2/envelopes`, capped at a
+  4 KB body and 30 requests/minute per forwarded client, and forwards none of
+  the caller's own headers. The previous `location /telemetry/` prefix passed
+  any method and any path straight through, which made this site a free
+  amplifier into the ingest service for anyone who found it.
 - Conversion — signups, petition signatures — is measured by Action Network's
   own dashboard via `?source=` codes on every CTA, not by s10. s10 answers "how
   many people read this," AN answers "how many people acted."
