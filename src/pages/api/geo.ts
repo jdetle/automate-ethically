@@ -1,7 +1,10 @@
 import type { APIRoute } from "astro";
 import { clientIp } from "../../lib/api-limits";
+import { initSentry } from "../../lib/sentry";
 
 export const prerender = false;
+
+initSentry();
 
 /**
  * A rough, disclosed, throwaway location guess — for seeding /guide's
@@ -61,6 +64,11 @@ async function lookup(ip: string): Promise<GeoResult> {
 		}
 		return result;
 	} catch {
+		// Deliberately not reported to Sentry: a timeout or rate limit against
+		// a free third-party API is an expected, already-handled outcome (the
+		// UI falls back to generic phrasing), not a bug to alert on. initSentry()
+		// above still means a genuinely unexpected crash here is caught by the
+		// process-level handlers in lib/sentry.ts.
 		return {};
 	} finally {
 		clearTimeout(timeout);

@@ -1,10 +1,13 @@
 import type { APIRoute } from "astro";
 import Anthropic from "@anthropic-ai/sdk";
 import { budgetRemaining, clientIp, rateLimited, spend, verifyTurnstile } from "../../lib/api-limits";
+import { initSentry, Sentry } from "../../lib/sentry";
 
 // On-demand route — the one page in this site that isn't plain static HTML.
 // See astro.config.mjs and README's Analytics/Deploy sections for why.
 export const prerender = false;
+
+initSentry();
 
 /**
  * The local-organizing guide.
@@ -89,7 +92,14 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 	// verification — it is never treated as "skip the check." Rate limits and
 	// IP caps below only slow a scripted abuser down; this is the actual gate
 	// in front of anything that spends real money per call.
-	const turnstileSecret = import.meta.env.TURNSTILE_SECRET_KEY;
+	//
+	// process.env, not import.meta.env: Astro/Vite statically inlines
+	// import.meta.env.X at BUILD time for non-PUBLIC_ vars in the Node-adapter
+	// server bundle, so a secret set only at container runtime would never be
+	// seen — the build would bake in "undefined" and Rollup would dead-code
+	// eliminate everything past this check. process.env is read live by Node
+	// on every request.
+	const turnstileSecret = process.env.TURNSTILE_SECRET_KEY;
 	if (!turnstileSecret) {
 		return new Response(
 			JSON.stringify({ error: "Human verification isn't configured yet." }),
@@ -103,7 +113,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 		});
 	}
 
-	const apiKey = import.meta.env.ANTHROPIC_API_KEY;
+	const apiKey = process.env.ANTHROPIC_API_KEY;
 	if (!apiKey) {
 		return new Response(
 			JSON.stringify({ error: "The guide isn't configured yet." }),
@@ -184,6 +194,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 				send("done", { stopReason: final.stop_reason });
 			} catch (err) {
 				console.error("guide: anthropic call failed", err);
+				Sentry.captureException(err);
 				send("error", { message: "Something went wrong on our end — try again in a moment." });
 			} finally {
 				controller.close();

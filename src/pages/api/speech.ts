@@ -1,7 +1,10 @@
 import type { APIRoute } from "astro";
 import { budgetRemaining, clientIp, spend, verifyTurnstile } from "../../lib/api-limits";
+import { initSentry, Sentry } from "../../lib/sentry";
 
 export const prerender = false;
+
+initSentry();
 
 /**
  * Text-to-speech for the guide, proxying OpenAI with the key on the server
@@ -26,7 +29,11 @@ const BUDGET_POOL = "speech-characters";
 const MAX_CHARS_PER_CALL = 2000; // matches guide.ts's reply-length ceiling
 
 export const GET: APIRoute = async () => {
-	const configured = Boolean(import.meta.env.OPENAI_API_KEY);
+	// process.env, not import.meta.env — see the comment in guide.ts's
+	// Turnstile check for why: import.meta.env.X for a non-PUBLIC_ var gets
+	// statically inlined at build time in this adapter's server bundle, so it
+	// would never see a value set only at container runtime.
+	const configured = Boolean(process.env.OPENAI_API_KEY);
 	return new Response(JSON.stringify({ configured }), {
 		headers: { "Content-Type": "application/json" },
 	});
@@ -49,7 +56,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 	// rather than trusting that — a caller that skips /api/guide entirely
 	// must still clear this bar before OpenAI gets a request.
 	const ip = clientIp(request, clientAddress ?? "unknown");
-	const turnstileSecret = import.meta.env.TURNSTILE_SECRET_KEY;
+	const turnstileSecret = process.env.TURNSTILE_SECRET_KEY;
 	if (!turnstileSecret) {
 		return new Response(JSON.stringify({ error: "not configured" }), {
 			status: 503,
@@ -63,7 +70,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 		});
 	}
 
-	const apiKey = import.meta.env.OPENAI_API_KEY;
+	const apiKey = process.env.OPENAI_API_KEY;
 	if (!apiKey) {
 		return new Response(JSON.stringify({ error: "not configured" }), {
 			status: 503,
@@ -106,6 +113,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 		});
 	} catch (err) {
 		console.error("speech: openai request failed", err);
+		Sentry.captureException(err);
 		return new Response(JSON.stringify({ error: "upstream unreachable" }), {
 			status: 503,
 			headers: { "Content-Type": "application/json" },
@@ -114,6 +122,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
 	if (upstream.status === 401 || upstream.status === 403) {
 		console.error("speech: openai rejected the key");
+		Sentry.captureMessage("speech: openai rejected the API key", "error");
 		return new Response(JSON.stringify({ error: "not configured" }), {
 			status: 503,
 			headers: { "Content-Type": "application/json" },

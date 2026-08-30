@@ -4,6 +4,12 @@ dist
 .github
 docs
 
+# Secrets belong in Container Apps env vars / secrets, never in the image —
+# they must never be readable inside a build context or a build-time layer.
+.env
+.env.*
+!.env.example
+
 # FACTS.md is NOT excluded: src/pages/facts.astro reads it at build time to
 # render /facts from the same file that governs every cited number on the
 # site. Excluding it here builds a container that dies with ENOENT while the
