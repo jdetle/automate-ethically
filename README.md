@@ -132,9 +132,27 @@ Azure Container Apps. `az acr build` builds the image on ACR (no Docker daemon
 needed on the runner) and pushes it as `automate-ethically:<sha7>` to the
 platform ACR; `az containerapp update` rolls `ca-automate-ethically` in
 `rg-platform` (shared `cae-platform` environment, alongside `jacquard` and
-`s10`). CI (`.github/workflows/ci.yml`) runs lint + build on every PR and push;
-the deploy workflow (`.github/workflows/deploy-azure.yml`) runs on push to
-`main` and via manual dispatch.
+`s10`). CI (`.github/workflows/ci.yml`) runs lint + build on GitHub-hosted
+`ubuntu-latest` on every PR and push; the deploy workflow
+(`.github/workflows/deploy-azure.yml`) runs on push to `main` and via manual
+dispatch, on the platform's shared **self-hosted runner fleet**
+(`runs-on: [self-hosted, linux, x64, azcaj]` — an Azure Container Apps Job,
+scale-to-zero, defined in `jdetle/platform`'s `infra/modules/platform-runners.bicep`).
+
+Auth is **OIDC federated credentials**, not a stored secret:
+`sp-automate-ethically-deploy` trusts only
+`repo:jdetle/automate-ethically:ref:refs/heads/main`, and holds only
+`AcrPush`/`Contributor` on the shared platform ACR plus `Contributor` scoped
+to `ca-automate-ethically` itself — not the whole shared `rg-platform`.
+
+**Two manual, one-time GitHub-UI steps the self-hosted runner depends on**
+(cannot be done via API with a normal token — GitHub App installation and
+fine-grained PAT repository-access edits both require the web UI):
+1. Install/configure the `platform-ci-runner` GitHub App on this repo.
+2. Add `jdetle/automate-ethically` to the `gh-runner-pat` fine-grained PAT's
+   repository access list.
+
+Until both are done, pushes to `main` queue a job that never gets picked up.
 
 Custom domain: `automate-ethically.com`. **As of 2026-08-29 the apex binding is
 disabled in ACA** — only `www.automate-ethically.com` has a working managed
@@ -144,6 +162,7 @@ the apex, or flip `site` to the `www` host) before search engines or shared
 links can trust the canonical URL — tracked as an open item, not yet resolved
 by this change.
 
-Repository secrets required for deploy: `AZURE_CREDENTIALS` (a deploy service
-principal with Contributor on `sub-platform`), `PLATFORM_ACR`
+Repository secrets required for deploy: `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`,
+`AZURE_SUBSCRIPTION_ID` (the `sp-automate-ethically-deploy` OIDC identity
+above), `PLATFORM_ACR`, `PLATFORM_SUB_ID`
 (`acrplatform….azurecr.io`).
