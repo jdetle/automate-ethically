@@ -65,20 +65,65 @@ test.describe("/guide — verify-then-chat flow", () => {
 		const replyLocator = page.locator(".ae-guide-turn:not(.ae-guide-turn--you) p").last();
 		const replyText = (await replyLocator.textContent())?.trim() ?? "";
 
+		// This assertion holds with or without a real model key, and it is the
+		// one that matters most. The *send* path mints its own second token,
+		// separate from the page-load check above — a bug there fails only on
+		// the second call, so the page looks fully verified ("Ready when you
+		// are.", input enabled) right up until the first message is sent and
+		// comes back "Couldn't verify you're human." That is exactly the
+		// production report this suite was written for, and an earlier version
+		// of this test missed it by accepting any non-empty reply.
+		//
+		// The test secret key (1x0000…AA) always passes server-side
+		// verification, so a Turnstile error here is never Cloudflare's
+		// verdict — it can only be this page's own token handling.
+		expect(replyText.length).toBeGreaterThan(0);
+		expect(replyText).not.toMatch(/Couldn't verify|Verification failed/);
+
 		if (hasRealKey) {
-			// The actual regression this test exists to catch: a real key
-			// configured end to end must produce a real, non-empty reply, not
-			// a silent failure dressed up as success.
-			expect(replyText.length).toBeGreaterThan(0);
-			expect(replyText).not.toMatch(/Couldn't verify|isn't configured|Something went wrong/);
-		} else {
-			// No real key in this run (the common case — CI never holds one):
-			// still demand a clean, worded failure rather than a blank bubble
-			// or a raw error the visitor can't do anything with.
-			expect(replyText.length).toBeGreaterThan(0);
+			// The full end-to-end assertion: a real key must produce a real
+			// reply, not a silent failure dressed up as success.
+			expect(replyText).not.toMatch(/isn't configured|Something went wrong/);
 		}
 
 		expect(consoleErrors, `Unexpected browser console errors:\n${consoleErrors.join("\n")}`).toEqual([]);
+	});
+
+	test("the widget is visible whenever a token is being minted, including on send", async ({ page }) => {
+		// The production bug this catches: #guide-turnstile lives inside
+		// #guide-verify, which the page-load check hides once it clears. Every
+		// later token request (each send mints its own) then ran against a
+		// widget sealed inside a `hidden` ancestor — fine for an invisible
+		// always-pass key, fatal for a real "managed" widget that may need to
+		// show a checkbox. The visitor saw "Ready when you are.", typed, sent,
+		// and got "Couldn't verify you're human" from a challenge that had
+		// nowhere to render.
+		//
+		await page.goto("/guide");
+
+		const input = page.locator("#guide-input");
+		const verifyWrap = page.locator("#guide-verify");
+
+		// Let the page-load check finish normally. The old code hid the
+		// wrapper permanently at this point.
+		await expect(input).toBeEnabled({ timeout: 20_000 });
+		await expect(verifyWrap).toBeHidden();
+
+		// Make the *next* token request hang instead of resolving, so the
+		// in-flight state is observable rather than a race. A real managed
+		// widget waiting on a human to click its checkbox is in exactly this
+		// state — pending, and useless unless it is on screen.
+		await page.evaluate(() => {
+			const w = window as unknown as { turnstile?: { execute: (id: string) => void } };
+			if (w.turnstile) w.turnstile.execute = () => {};
+		});
+
+		await input.fill("hi");
+		await page.locator("#guide-send").click();
+
+		// The regression: this must be visible while the send's token request
+		// is outstanding, or a challenge that needs a click can never get one.
+		await expect(verifyWrap).toBeVisible({ timeout: 10_000 });
 	});
 
 	test("a Turnstile failure is shown as a fail-closed message, never a silent hang", async ({ page }) => {

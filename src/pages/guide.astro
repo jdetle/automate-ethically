@@ -129,6 +129,24 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 	let turnstileWidgetId: string | null = null;
 	let pendingTokenResolve: ((token: string) => void) | null = null;
 	let pendingTokenReject: ((err: Error) => void) | null = null;
+	// Distinguishes one token request from the next, so a late timeout from a
+	// finished request can never reject the request that replaced it.
+	let turnstileRequestId = 0;
+
+	// The widget lives inside #guide-verify. That wrapper MUST be visible for
+	// the whole time a token is being minted — Cloudflare can decide at any
+	// moment that it needs to show a checkbox, and a challenge inside a
+	// `hidden` ancestor has nowhere to render, so it can never be satisfied.
+	// An earlier version hid the wrapper for good once the page-load check
+	// cleared, which left every later token request (each send mints its own)
+	// running against a sealed widget: the page said "Ready when you are.",
+	// then the first message came back "Couldn't verify you're human." An
+	// invisible always-pass test key hid this in testing; a real managed
+	// widget hit it immediately.
+	function setVerifyVisible(visible: boolean) {
+		const wrap = document.querySelector<HTMLDivElement>("#guide-verify");
+		if (wrap) wrap.hidden = !visible;
+	}
 
 	// Settles whichever getTurnstileToken() call is currently pending. This
 	// MUST capture pendingTokenResolve/pendingTokenReject into locals before
@@ -144,6 +162,8 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 		const reject = pendingTokenReject;
 		pendingTokenResolve = null;
 		pendingTokenReject = null;
+		turnstileRequestId += 1;
+		setVerifyVisible(false);
 		if (kind === "resolve" && typeof payload === "string") resolve?.(payload);
 		if (kind === "reject" && payload instanceof Error) reject?.(payload);
 	}
@@ -205,10 +225,20 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 			}
 			pendingTokenResolve = resolve;
 			pendingTokenReject = reject;
+			// Visible for the whole request, every time — Cloudflare may need
+			// to show a checkbox on any call, not just the first.
+			setVerifyVisible(true);
+			const thisRequest = turnstileRequestId;
 			window.turnstile.reset(turnstileWidgetId);
 			window.turnstile.execute(turnstileWidgetId);
 			setTimeout(() => {
-				if (pendingTokenReject) settleTurnstile("reject", new Error("verification timed out"));
+				// Only time out the request this timer was started for. Without
+				// the id check, a finished request's stale timer could fire
+				// while a *later* request was pending and reject that one
+				// instead — a rare, near-impossible-to-reproduce failure.
+				if (thisRequest === turnstileRequestId && pendingTokenReject) {
+					settleTurnstile("reject", new Error("verification timed out"));
+				}
 			}, 15000);
 		});
 	}
@@ -217,8 +247,6 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 		role: "user" | "assistant";
 		text: string;
 	}
-
-	const verifyWrap = document.querySelector<HTMLDivElement>("#guide-verify");
 
 	const form = document.querySelector<HTMLFormElement>("#guide-form");
 	const input = document.querySelector<HTMLTextAreaElement>("#guide-input");
@@ -256,15 +284,14 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 			return;
 		}
 		if (status) status.textContent = "Verifying you're human…";
-		if (verifyWrap) verifyWrap.hidden = false;
+		// Visibility is getTurnstileToken()'s job now, for every call — not
+		// just this one. See setVerifyVisible() for why that matters.
 		try {
 			await getTurnstileToken();
 			if (status) status.textContent = "Ready when you are.";
 		} catch {
 			if (status) status.textContent = "Couldn't verify you're human — reload the page to try again.";
 			return;
-		} finally {
-			if (verifyWrap) verifyWrap.hidden = true;
 		}
 		if (input) {
 			input.disabled = false;
