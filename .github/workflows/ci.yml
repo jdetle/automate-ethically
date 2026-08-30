@@ -20,3 +20,10 @@ jobs:
       - run: bun run lint
       - run: bunx astro check
       - run: bun run build
+
+      # Playwright, not the real Turnstile widget — see scripts/e2e-server.sh
+      # for why: real Turnstile is designed to be unpassable by automation,
+      # so this uses Cloudflare's official test keys instead. Regression
+      # coverage for a real production incident (see tests/guide.e2e.spec.ts).
+      - run: bunx playwright install --with-deps chromium
+      - run: bun run test:e2e
