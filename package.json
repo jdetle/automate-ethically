@@ -8,7 +8,7 @@
     "dev": "astro dev",
     "build": "astro build && pagefind --site dist/client",
     "preview": "astro preview",
-    "lint": "biome check .",
+    "lint": "biome check src tests *.mjs *.json",
     "test:e2e": "playwright test"
   },
   "dependencies": {
