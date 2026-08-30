@@ -17,7 +17,36 @@ BASE="${1:-https://automate-ethically.com}"
 failures=0
 
 pass() { printf '  ok   %s\n' "$1"; }
+warn() { printf '  WARN %s\n' "$1"; }
 fail() { printf '  FAIL %s\n' "$1"; failures=$((failures + 1)); }
+
+# Mirrors readSecret() in src/lib/env.ts: trim, then strip one matching pair
+# of surrounding quotes. Kept deliberately in sync — if that changes, change
+# this, or this stops testing what the app actually does.
+normalise() {
+	local v="$1"
+	v="${v#"${v%%[![:space:]]*}"}"
+	v="${v%"${v##*[![:space:]]}"}"
+	case "$v" in
+	\"*\") v="${v#\"}"; v="${v%\"}" ;;
+	\'*\') v="${v#\'}"; v="${v%\'}" ;;
+	esac
+	printf '%s' "$v"
+}
+
+# Reports whether a stored secret needed cleaning. Not fatal — the app
+# normalises too — but it means the secret is stored wrong at its source and
+# will bite anything that reads it more literally.
+check_hygiene() {
+	local secret_name="$1"
+	local raw
+	raw=$(az containerapp secret show --name ca-automate-ethically --resource-group rg-platform \
+		--secret-name "$secret_name" --query value -o tsv 2>/dev/null) || return 0
+	[ -n "$raw" ] || return 0
+	if [ "$raw" != "$(normalise "$raw")" ]; then
+		warn "$secret_name is stored with quotes or whitespace around it — the app strips them, but fix it at the source"
+	fi
+}
 
 echo "Smoke-testing ${BASE}"
 
@@ -59,8 +88,13 @@ if command -v az >/dev/null 2>&1; then
 		az containerapp secret show --name ca-automate-ethically --resource-group rg-platform \
 			--secret-name anthropic-api-key --query value -o tsv 2>/dev/null |
 			{
-				read -r key
-				[ -n "$key" ] || { echo "nokey"; exit; }
+				read -r raw
+				[ -n "$raw" ] || { echo "nokey"; exit; }
+				# Normalise exactly as src/lib/env.ts readSecret() does, so this
+				# answers the question that actually matters — "will the app be
+				# able to use this?" — rather than testing bytes the app never
+				# sees. A separate check below flags a malformed stored value.
+				key=$(normalise "$raw")
 				curl -sS -o /dev/null -w '%{http_code}' https://api.anthropic.com/v1/messages \
 					-H "x-api-key: ${key}" -H 'anthropic-version: 2023-06-01' \
 					-H 'content-type: application/json' \
@@ -78,8 +112,9 @@ if command -v az >/dev/null 2>&1; then
 		az containerapp secret show --name ca-automate-ethically --resource-group rg-platform \
 			--secret-name openai-api-key --query value -o tsv 2>/dev/null |
 			{
-				read -r key
-				[ -n "$key" ] || { echo "nokey"; exit; }
+				read -r raw
+				[ -n "$raw" ] || { echo "nokey"; exit; }
+				key=$(normalise "$raw")
 				curl -sS -o /dev/null -w '%{http_code}' https://api.openai.com/v1/models \
 					-H "Authorization: Bearer ${key}"
 			}
@@ -90,6 +125,8 @@ if command -v az >/dev/null 2>&1; then
 	401 | 403) fail "OPENAI_API_KEY is REJECTED by OpenAI (HTTP $openai_status) — check for quotes/whitespace in the stored secret" ;;
 	*) fail "OPENAI_API_KEY check inconclusive (HTTP $openai_status)" ;;
 	esac
+	check_hygiene anthropic-api-key
+	check_hygiene openai-api-key
 else
 	echo "  skip az not available — credential validity NOT checked"
 fi
