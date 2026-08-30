@@ -35,6 +35,14 @@
 #   S10_INGEST_KEY      (once the automate-ethically s10 tenant is registered —
 #                        see README's Analytics section — used only by the
 #                        smoke-test step below, never baked into the image)
+#   SENTRY_DSN          server-side error tracking for the three on-demand
+#                        routes (src/lib/sentry.ts, @sentry/node only — not
+#                        @sentry/astro, which would inject a browser SDK into
+#                        every page). Optional and fails silent: no DSN means
+#                        no reporting, not a broken route. A DSN is meant to
+#                        be public (it can only submit events, not read data),
+#                        so unlike the keys above it's fine as a plain env var
+#                        rather than a Container Apps secret.
 #
 # Two manual, one-time GitHub-UI steps this workflow depends on (cannot be
 # done via API with a normal token — see README's Deploy section):
@@ -92,6 +100,7 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         run: |
           set -euo pipefail
           az extension add --name containerapp --upgrade --yes 2>/dev/null || true
@@ -133,6 +142,13 @@ jobs:
             echo "OPENAI_API_KEY not set — the guide will stay text-only after this deploy" >&2
             ENV_VARS+=("OPENAI_API_KEY=")
           fi
+
+          # Not a secret ref: a DSN is meant to be public (it can only submit
+          # events, never read data back), so it's a plain env var like
+          # SENTRY_ENVIRONMENT below rather than going through
+          # `containerapp secret set`.
+          ENV_VARS+=("SENTRY_DSN=${SENTRY_DSN}")
+          ENV_VARS+=("SENTRY_ENVIRONMENT=production")
 
           az containerapp update \
             --name ca-automate-ethically --resource-group rg-platform \
