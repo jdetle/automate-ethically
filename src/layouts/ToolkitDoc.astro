@@ -7,13 +7,18 @@ interface Props {
 	description: string;
 	updated: Date;
 	printable: boolean;
+	legalReview?: boolean;
 }
 
-const { title, description, updated, printable } = Astro.props;
+const { title, description, updated, printable, legalReview = false } = Astro.props;
+// YAML frontmatter dates parse as UTC midnight; formatting in the build
+// machine's local timezone can roll the date back a day west of UTC.
+// Force UTC so "2026-08-29" always reads as August 29, everywhere.
 const updatedLabel = updated.toLocaleDateString("en-US", {
 	year: "numeric",
 	month: "long",
 	day: "numeric",
+	timeZone: "UTC",
 });
 ---
 
@@ -23,6 +28,16 @@ const updatedLabel = updated.toLocaleDateString("en-US", {
 		<h1 id="doc-title">{title}</h1>
 		<p class="ae-hero-sub">{description}</p>
 		<p class="ae-aside">Last checked {updatedLabel}.</p>
+		{
+			legalReview && (
+				<p class="ae-legal-notice">
+					<strong>This is a starting draft for discussion, not legal
+					advice.</strong> It has not been reviewed by an attorney. Your
+					city attorney will and should rewrite it before it goes anywhere
+					near a vote.
+				</p>
+			)
+		}
 		{
 			printable && (
 				<p class="ae-note">

@@ -1,0 +1,45 @@
+---
+import { readFileSync } from "node:fs";
+import { marked } from "marked";
+import Page from "../layouts/Page.astro";
+import Stitch from "../components/Stitch.astro";
+
+// Renders the repo's actual FACTS.md at build time — one source of truth,
+// so this page can never silently drift from the registry that governs
+// every cited number on the site.
+const factsMarkdown = readFileSync(
+	new URL("../../FACTS.md", import.meta.url),
+	"utf-8",
+);
+const factsHtml = await marked.parse(factsMarkdown);
+---
+
+<Page
+	title="Facts and corrections — Automate Ethically"
+	description="Every number on this site: its source, when we last checked it, and our policy for fixing mistakes."
+	ogImage="/og/facts.png"
+>
+	<section class="ae-hero" aria-labelledby="facts-title">
+		<p class="ae-eyebrow">Accountability</p>
+		<h1 id="facts-title">Every number, sourced.</h1>
+		<p class="ae-hero-sub">
+			A site arguing for accountability should hold itself to the same
+			standard. This page is generated directly from the registry we keep
+			in our own repository — nothing here is hand-copied, so it can't drift
+			from what the code actually says.
+		</p>
+	</section>
+
+	<Stitch />
+
+	<section class="ae-section" aria-label="Fact registry">
+		<div class="ae-container ae-prose ae-facts" set:html={factsHtml} />
+	</section>
+</Page>
+
+<style>
+	.ae-facts :global(table) {
+		display: block;
+		overflow-x: auto;
+	}
+</style>

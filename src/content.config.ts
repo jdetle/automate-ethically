@@ -11,6 +11,10 @@ const toolkit = defineCollection({
 		updated: z.date(),
 		printable: z.boolean().default(false),
 		order: z.number().default(99),
+		// A model ordinance isn't a voice/DRAFT task, it's a NEEDS-LEGAL-REVIEW
+		// one — this renders a distinct, non-dismissible disclaimer instead of
+		// (or alongside) the print banner.
+		legalReview: z.boolean().default(false),
 	}),
 });
 

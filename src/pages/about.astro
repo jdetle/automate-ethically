@@ -1,0 +1,97 @@
+---
+import Page from "../layouts/Page.astro";
+import Stitch from "../components/Stitch.astro";
+import ProjectCard from "../components/ProjectCard.astro";
+---
+
+<Page
+	title="About — Automate Ethically"
+	description="Who's behind this, what we're building, and what we intend to become."
+	ogImage="/og/about.png"
+>
+	<section class="ae-hero" aria-labelledby="about-title">
+		<p class="ae-eyebrow">About</p>
+		<h1 id="about-title">Neighbors, builders, and organizers.</h1>
+		<p class="ae-hero-sub">
+			Not a campaign, not yet a committee — here's exactly what this is
+			today, and what we build alongside it.
+		</p>
+	</section>
+
+	<Stitch />
+
+	<section class="ae-section" id="projects" aria-labelledby="projects-title">
+		<div class="ae-container">
+			<p class="ae-eyebrow">Built on these principles</p>
+			<h2 class="ae-h2" id="projects-title">Proof, in working code</h2>
+			<div class="ae-projects">
+				<!-- DRAFT: rewrite — copy task 6: project card jacquard -->
+				<ProjectCard name="jacquard" chip="in development" chipQuiet>
+					<p>
+						Version control where a decision is an object in the graph. An
+						agent can draft a decision and propose it.
+					</p>
+					<p class="ae-project-human">
+						Only a person can settle it — with a few sentences in their own
+						words, under their own name.
+					</p>
+				</ProjectCard>
+				<!-- DRAFT: rewrite — copy task 7: project card phantom-thread -->
+				<ProjectCard name="phantom-thread" chip="request an invite">
+					<p>
+						A careful review and a rubber stamp leave the same green check.
+						phantom-thread makes them distinguishable — and rewards the
+						careful one.
+					</p>
+					<p>
+						<a href="https://jdetle.com/phantom-thread">Preview at
+						jdetle.com/phantom-thread</a> (invite-gated today).
+					</p>
+				</ProjectCard>
+			</div>
+			<p class="ae-aside">
+				The thinking behind these tools lives at
+				<a href="https://jdetle.com">jdetle.com</a>.
+			</p>
+		</div>
+	</section>
+
+	<Stitch />
+
+	<!-- DRAFT: rewrite — copy task 8: movement / PAC-goal statement. This
+	     sentence relocates here verbatim from the index page — do not
+	     rewrite it without re-checking README's "PAC is a goal, not an
+	     entity" content rule. -->
+	<section class="ae-section ae-section--tint" id="movement" aria-labelledby="movement-title">
+		<div class="ae-container">
+			<p class="ae-eyebrow">The movement</p>
+			<h2 class="ae-h2" id="movement-title">Don't hate the player. Change the rulebook.</h2>
+			<p class="ae-plain">
+				We intend to form a registered political committee. Until that
+				exists, we are neighbors, builders, and organizers — and we are not
+				asking for money.
+			</p>
+			<p class="ae-aside">
+				Curious what "not asking for money" actually means in practice? See
+				<a href="/toolkit/faq#whos-behind-this-are-you-raising-money">the FAQ</a>.
+			</p>
+		</div>
+	</section>
+
+	<Stitch />
+
+	<!-- DRAFT: rewrite — copy task 22: who-is-John block -->
+	<section class="ae-section" aria-labelledby="who-title">
+		<div class="ae-container">
+			<p class="ae-eyebrow">Who's behind this</p>
+			<h2 class="ae-h2" id="who-title">One person, so far.</h2>
+			<p class="ae-prose">
+				This site, the toolkit, and the two projects above are built by
+				<a href="https://jdetle.com">John Detlefs</a>. If you're reading
+				this before the movement has a staff or a committee, that's because
+				it doesn't have one yet — see <a href="/act">how to help build
+				one</a>.
+			</p>
+		</div>
+	</section>
+</Page>

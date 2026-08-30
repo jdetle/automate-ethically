@@ -599,6 +599,45 @@ main {
 	color: var(--ae-ink);
 }
 
+/* A model ordinance's disclaimer — distinct from .ae-note, always visible,
+ * never dismissible, and printed rather than hidden under @media print. */
+.ae-legal-notice {
+	margin: 22px 0 0;
+	padding: 16px 20px;
+	max-width: var(--ae-max-text);
+	border: 1px solid var(--ae-madder);
+	border-radius: 8px;
+	background: var(--ae-madder-wash);
+	font-size: 14px;
+	line-height: 1.6;
+	color: var(--ae-ink);
+}
+
+/* ---- Prose tables (the facts page) ---- */
+
+.ae-prose table {
+	margin: 22px 0 0;
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 14px;
+}
+
+.ae-prose th,
+.ae-prose td {
+	padding: 10px 14px;
+	border-bottom: 1px solid var(--ae-line-soft);
+	text-align: left;
+	vertical-align: top;
+}
+
+.ae-prose th {
+	font-size: 12px;
+	letter-spacing: var(--ae-tracking-chip);
+	text-transform: uppercase;
+	color: var(--ae-muted);
+	font-weight: 600;
+}
+
 /* ---- Action ladder ---- */
 
 .ae-ladder {
@@ -683,6 +722,39 @@ main {
 	width: 100%;
 	height: 100%;
 	display: block;
+}
+
+/* ---- Quote cards (shareable images, /act rung 3) ---- */
+
+.ae-quote-cards-intro {
+	margin-top: 28px;
+}
+
+.ae-quote-cards {
+	margin-top: 14px;
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+	gap: 14px;
+	max-width: var(--ae-max-text);
+}
+
+.ae-quote-cards a {
+	display: block;
+	border-radius: 6px;
+	overflow: hidden;
+	border: 1px solid var(--ae-line);
+	transition: transform 140ms var(--ae-ease), box-shadow 140ms var(--ae-ease);
+}
+
+.ae-quote-cards a:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 8px 20px var(--ae-shadow);
+}
+
+.ae-quote-cards img {
+	display: block;
+	width: 100%;
+	height: auto;
 }
 
 /* ---- Motion ---- */
