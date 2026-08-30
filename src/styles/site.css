@@ -539,6 +539,224 @@ main {
 	font-style: italic;
 }
 
+/* ---- Nav: Act is the one primary link ---- */
+
+.ae-nav-act {
+	color: var(--ae-madder);
+	font-weight: 700;
+}
+
+.ae-nav-act:hover {
+	color: var(--ae-madder);
+}
+
+/* ---- Footer nav + the no-tracking line ---- */
+
+.ae-footer-nav {
+	display: flex;
+	gap: 16px;
+}
+
+.ae-footer-nav a {
+	text-decoration: none;
+	color: var(--ae-muted);
+}
+
+.ae-footer-nav a:hover {
+	color: var(--ae-ink);
+}
+
+.ae-footer-inner--quiet {
+	padding-top: 0;
+	padding-bottom: 28px;
+	font-size: 12px;
+	max-width: 68ch;
+}
+
+/* ---- Toolkit / card-as-link ---- */
+
+.ae-card-link {
+	text-decoration: none;
+	transition: transform 140ms var(--ae-ease), box-shadow 140ms var(--ae-ease);
+}
+
+.ae-card-link:hover {
+	color: var(--ae-ink);
+	transform: translateY(-2px);
+	box-shadow: 0 8px 20px var(--ae-shadow);
+}
+
+/* ---- Print banner: a note, not a warning ---- */
+
+.ae-note {
+	margin: 22px 0 0;
+	padding: 14px 18px;
+	max-width: var(--ae-max-text);
+	border: 1px solid var(--ae-line);
+	border-radius: 8px;
+	background: var(--ae-indigo-wash);
+	font-size: 14px;
+	color: var(--ae-ink);
+}
+
+/* A model ordinance's disclaimer — distinct from .ae-note, always visible,
+ * never dismissible, and printed rather than hidden under @media print. */
+.ae-legal-notice {
+	margin: 22px 0 0;
+	padding: 16px 20px;
+	max-width: var(--ae-max-text);
+	border: 1px solid var(--ae-madder);
+	border-radius: 8px;
+	background: var(--ae-madder-wash);
+	font-size: 14px;
+	line-height: 1.6;
+	color: var(--ae-ink);
+}
+
+/* ---- Prose tables (the facts page) ---- */
+
+.ae-prose table {
+	margin: 22px 0 0;
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 14px;
+}
+
+.ae-prose th,
+.ae-prose td {
+	padding: 10px 14px;
+	border-bottom: 1px solid var(--ae-line-soft);
+	text-align: left;
+	vertical-align: top;
+}
+
+.ae-prose th {
+	font-size: 12px;
+	letter-spacing: var(--ae-tracking-chip);
+	text-transform: uppercase;
+	color: var(--ae-muted);
+	font-weight: 600;
+}
+
+/* ---- Action ladder ---- */
+
+.ae-ladder {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+}
+
+.ae-rung {
+	scroll-margin-top: 24px;
+	padding: 34px 0;
+	border-top: 1px solid var(--ae-line-soft);
+	max-width: var(--ae-max-text);
+}
+
+.ae-rung:first-child {
+	border-top: none;
+	padding-top: 0;
+}
+
+.ae-rung-time {
+	display: inline-block;
+	margin-bottom: 8px;
+	padding: 3px 10px;
+	border: 1px solid var(--ae-line-strong);
+	border-radius: 999px;
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: var(--ae-tracking-chip);
+	text-transform: uppercase;
+	color: var(--ae-muted);
+}
+
+.ae-rung .ae-cta-row {
+	margin-top: 20px;
+}
+
+.ae-rung-sub {
+	margin: 26px 0 0;
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--ae-ink);
+}
+
+/* ---- One-pager sheet ---- */
+
+.ae-onepager-sheet {
+	max-width: 680px;
+	padding: 48px 40px;
+	border: 1px solid var(--ae-line);
+	border-radius: 4px;
+	background: var(--ae-card);
+}
+
+.ae-stats--compact {
+	margin-top: 26px;
+	gap: 20px 28px;
+}
+
+.ae-stats--compact .ae-stat-num {
+	font-size: clamp(34px, 4vw, 46px);
+	padding-bottom: 8px;
+}
+
+.ae-onepager-footer {
+	margin-top: 34px;
+	display: flex;
+	align-items: center;
+	gap: 20px;
+	flex-wrap: wrap;
+}
+
+.ae-onepager-qr {
+	width: 96px;
+	height: 96px;
+	flex-shrink: 0;
+}
+
+.ae-onepager-qr svg {
+	width: 100%;
+	height: 100%;
+	display: block;
+}
+
+/* ---- Quote cards (shareable images, /act rung 3) ---- */
+
+.ae-quote-cards-intro {
+	margin-top: 28px;
+}
+
+.ae-quote-cards {
+	margin-top: 14px;
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+	gap: 14px;
+	max-width: var(--ae-max-text);
+}
+
+.ae-quote-cards a {
+	display: block;
+	border-radius: 6px;
+	overflow: hidden;
+	border: 1px solid var(--ae-line);
+	transition: transform 140ms var(--ae-ease), box-shadow 140ms var(--ae-ease);
+}
+
+.ae-quote-cards a:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 8px 20px var(--ae-shadow);
+}
+
+.ae-quote-cards img {
+	display: block;
+	width: 100%;
+	height: auto;
+}
+
 /* ---- Motion ---- */
 
 @media (prefers-reduced-motion: reduce) {

@@ -6,9 +6,14 @@
 # Repository secrets required:
 #   AZURE_CREDENTIALS   a deploy SP with Contributor on sub-platform
 #   PLATFORM_ACR        acrplatform….azurecr.io
+#   S10_INGEST_KEY      (once the automate-ethically s10 tenant is registered —
+#                        see README's Analytics section — used only by the
+#                        smoke-test step below, never baked into the image)
 name: deploy-azure
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 concurrency:
@@ -51,3 +56,21 @@ jobs:
             --resource-group rg-platform \
             --query "properties.configuration.ingress.fqdn" -o tsv)
           echo "Site: https://${FQDN}" >> "$GITHUB_STEP_SUMMARY"
+
+      # TODO(s10 tenant): once `register-app-observability.sh --tenant
+      # automate-ethically` has run and S10_INGEST_KEY exists as a repo
+      # secret, uncomment this step. It exists because a past integration
+      # 401'd silently on a malformed key — this turns that failure mode into
+      # a red CI run instead of a site that looks instrumented and isn't.
+      #
+      # - name: Smoke-test s10 ingest
+      #   env:
+      #     S10_INGEST_KEY: ${{ secrets.S10_INGEST_KEY }}
+      #   run: |
+      #     set -euo pipefail
+      #     RESP=$(curl -sS -X POST "$S10_INGEST_URL/v2/envelopes" \
+      #       -H "Authorization: Bearer $S10_INGEST_KEY" \
+      #       -H "Content-Type: application/x-ndjson" \
+      #       --data-binary '{"kind":"pageview","tenant":"automate-ethically","path":"/__ci-smoke-test"}')
+      #     echo "$RESP"
+      #     echo "$RESP" | grep -q '"accepted":[1-9]' || { echo "s10 rejected the smoke envelope"; exit 1; }

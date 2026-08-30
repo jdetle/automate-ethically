@@ -8,9 +8,15 @@ status: proceed
 scope: src/pages/index.astro, src/styles/site.css, copy register and evidence policy for the landing page
 diff_base: origin/main
 veto_fired: true
-follow_up_open: true
+follow_up_open: false
 caught_real_issue: pending
 ---
+
+> **Update, 2026-08-29 (same day, later commit):** Kai's dissent below is
+> closed. `/act` shipped with both a printable one-pager and a 2-minute
+> council script — see
+> [2026-08-29-action-ladder-accessibility.md](./2026-08-29-action-ladder-accessibility.md)
+> for the review of that page.
 
 ## TL;DR
 - decision: proceed — "evidenced urgency," not theatrical urgency
@@ -81,7 +87,7 @@ Personas: maren-shipper@v1, iris-auditor@v1, kai-explorer@v1, rafe-steward@v1, j
 
 **Veto status:** Iris vetoed on unsourced urgency claims — **resolved by** the citation-adjacent-to-claim gate and FACTS.md landing in the same commit. She notes the veto re-fires automatically if a future edit adds a number without a link or removes a citation while keeping its claim.
 
-**Dissent (Kai, minority):** the mailto CTA is an inadequate action for the stated audience. Trigger condition to close: v1.1 take-action page ships with at least one lower-friction action (printable one-pager or council-meeting script). Stays open across reviews until met.
+**Dissent (Kai, minority):** the mailto CTA is an inadequate action for the stated audience. Trigger condition to close: v1.1 take-action page ships with at least one lower-friction action (printable one-pager or council-meeting script). Stays open across reviews until met. **Closed 2026-08-29** — `/act` shipped with both.
 
 **Kill criterion:** any published fact found incorrect, materially superseded, or source-dead → corrected or removed within 48 hours of discovery. Any fact that cannot be re-verified at its 6-month recheck comes down with its claim. (No analytics exist by design, so the criterion binds to fact integrity, not traffic.)
 

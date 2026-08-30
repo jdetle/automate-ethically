@@ -1,0 +1,55 @@
+---
+import { getCollection } from "astro:content";
+import Page from "../../layouts/Page.astro";
+import Stitch from "../../components/Stitch.astro";
+
+const docs = (await getCollection("toolkit")).sort(
+	(a, b) => a.data.order - b.data.order,
+);
+---
+
+<Page
+	title="The organizing toolkit — Automate Ethically"
+	description="Everything you need to bring this to your town: a one-pager you can print, a script for public comment, and a guide to finding your council meeting."
+	ogImage="/og/toolkit.png"
+>
+	<section class="ae-hero" aria-labelledby="toolkit-title">
+		<p class="ae-eyebrow">The toolkit</p>
+		<!-- DRAFT: rewrite — copy task 24: toolkit hub blurb -->
+		<h1 id="toolkit-title">Everything you need is on paper.</h1>
+		<p class="ae-hero-sub">
+			No app to install, no account to make. Print what you need, or read it
+			on your phone on the way in.
+		</p>
+	</section>
+
+	<Stitch />
+
+	<section class="ae-section" aria-label="Toolkit documents">
+		<div class="ae-container">
+			<div class="ae-pillars">
+				<a class="ae-card ae-card-link" href="/toolkit/one-pager">
+					<div class="ae-card-punch" aria-hidden="true"></div>
+					<h3>One-pager</h3>
+					<p>
+						The whole argument on a single printed sheet — pin it up
+						somewhere people will see it.
+					</p>
+					<span class="ae-chip">2 minutes to read</span>
+				</a>
+				{
+					docs.map((doc) => (
+						<a class="ae-card ae-card-link" href={`/toolkit/${doc.id}`}>
+							<div class="ae-card-punch" aria-hidden="true" />
+							<h3>{doc.data.title}</h3>
+							<p>{doc.data.description}</p>
+							<span class="ae-chip ae-chip--quiet">
+								{doc.data.printable ? "printable" : "read online"}
+							</span>
+						</a>
+					))
+				}
+			</div>
+		</div>
+	</section>
+</Page>

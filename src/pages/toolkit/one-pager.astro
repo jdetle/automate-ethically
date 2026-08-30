@@ -1,0 +1,78 @@
+---
+import QRCode from "qrcode";
+import Page from "../../layouts/Page.astro";
+
+// Generated once at build time — no client JS, no external QR service. If
+// the destination URL ever changes, this regenerates automatically on the
+// next build.
+const actionUrl = "https://automate-ethically.com/act?source=one-pager-qr";
+const qrSvg = await QRCode.toString(actionUrl, {
+	type: "svg",
+	margin: 0,
+	color: { dark: "#232a38", light: "#00000000" },
+});
+const updatedLabel = "August 29, 2026";
+---
+
+<Page
+	title="The one-pager — Automate Ethically"
+	description="The whole argument on one printed sheet. Print it, pin it up, hand it to a neighbor."
+>
+	<section class="ae-hero ae-printable" aria-labelledby="op-title">
+		<p class="ae-eyebrow"><a href="/toolkit">&larr; The toolkit</a></p>
+		<h1 id="op-title">The one-pager</h1>
+		<p class="ae-hero-sub">
+			A broadside was made to be nailed up. Print this page — <strong>File,
+			then Print</strong> — and it comes out as one sheet you can pin to a
+			corkboard, hand to a neighbor, or leave at the library.
+		</p>
+	</section>
+
+	<section class="ae-section ae-onepager ae-printable" aria-label="Printable one-pager">
+		<div class="ae-container ae-onepager-sheet">
+			<!-- DRAFT: rewrite — copy task 17: one-pager full text (voice-critical) -->
+			<p class="ae-eyebrow">automate ethically</p>
+			<h2 class="ae-h2">A human makes the decision, and answers for it.</h2>
+			<p class="ae-prose">
+				Cameras watch your street. Machines answer your insurance claim. Data
+				centers rise at the edge of town. None of them can be held
+				accountable — only a person can.
+			</p>
+			<figure class="ae-epigraph">
+				<blockquote>
+					The loom did not remove the weaver. A person still chose the
+					pattern, punched the cards, examined the cloth, and signed the bolt.
+				</blockquote>
+				<figcaption>jacquard, 1804</figcaption>
+			</figure>
+
+			<div class="ae-stats ae-stats--compact">
+				<div class="ae-stat">
+					<span class="ae-stat-num">6,000</span>
+					<span class="ae-stat-label">communities watched by one company's license-plate cameras</span>
+					<span class="ae-stat-src"><a href="https://www.ipm.org/news/2026-08-17/flock-safety-tightens-safeguards-as-states-cities-question-surveillance-network">Stateline</a>, Aug 2026</span>
+				</div>
+				<div class="ae-stat">
+					<span class="ae-stat-num">426&thinsp;TWh</span>
+					<span class="ae-stat-label">projected US data-center electricity by 2030</span>
+					<span class="ae-stat-src"><a href="https://www.iea.org/reports/energy-and-ai/energy-demand-from-ai">IEA</a>, Energy and AI</span>
+				</div>
+				<div class="ae-stat">
+					<span class="ae-stat-num">1,561</span>
+					<span class="ae-stat-label">AI bills introduced in 45 states this session</span>
+					<span class="ae-stat-src"><a href="https://www.multistate.ai/artificial-intelligence-ai-legislation">multistate.ai</a>, Mar 2026</span>
+				</div>
+			</div>
+
+			<p class="ae-plain">Your town writes these rules this year. Be in the room.</p>
+
+			<div class="ae-onepager-footer">
+				<div class="ae-onepager-qr" set:html={qrSvg} />
+				<div>
+					<p class="ae-aside"><strong>automate-ethically.com/act</strong></p>
+					<p class="ae-aside">Facts checked {updatedLabel}. Sources and our correction policy: automate-ethically.com/facts</p>
+				</div>
+			</div>
+		</div>
+	</section>
+</Page>

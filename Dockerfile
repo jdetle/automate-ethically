@@ -17,6 +17,8 @@ RUN bun install --frozen-lockfile
 
 COPY . .
 RUN bun run build
+# `build` runs `astro build && pagefind --site dist` — if this ever changes
+# to invoke `astro build` alone, search silently stops indexing new pages.
 
 FROM public.ecr.aws/nginx/nginx:alpine
 
