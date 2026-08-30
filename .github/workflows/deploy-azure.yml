@@ -1,0 +1,53 @@
+# Builds the site image via an ACR Quick Task and rolls the container app.
+#
+# `az acr build` ships the build context to ACR and builds there, so no Docker
+# daemon is needed on the runner — the same approach jacquard uses.
+#
+# Repository secrets required:
+#   AZURE_CREDENTIALS   a deploy SP with Contributor on sub-platform
+#   PLATFORM_ACR        acrplatform….azurecr.io
+name: deploy-azure
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  # One deploy at a time: two overlapping runs would race on the revision.
+  group: deploy-azure
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Build and push the image
+        env:
+          PLATFORM_ACR: ${{ secrets.PLATFORM_ACR }}
+        run: |
+          set -euo pipefail
+          ACR_NAME="${PLATFORM_ACR%%.*}"
+          TAG="${GITHUB_SHA::7}"
+          az acr build --registry "$ACR_NAME" \
+            --image "automate-ethically:$TAG" --file Dockerfile .
+          echo "IMAGE=${PLATFORM_ACR}/automate-ethically:$TAG" >> "$GITHUB_ENV"
+
+      - name: Roll the app
+        run: |
+          set -euo pipefail
+          az containerapp update \
+            --name ca-automate-ethically --resource-group rg-platform \
+            --image "$IMAGE" \
+            --output none
+
+      - name: Say where it landed
+        run: |
+          FQDN=$(az containerapp show --name ca-automate-ethically \
+            --resource-group rg-platform \
+            --query "properties.configuration.ingress.fqdn" -o tsv)
+          echo "Site: https://${FQDN}" >> "$GITHUB_STEP_SUMMARY"
