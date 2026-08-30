@@ -154,13 +154,10 @@ fine-grained PAT repository-access edits both require the web UI):
 
 Until both are done, pushes to `main` queue a job that never gets picked up.
 
-Custom domain: `automate-ethically.com`. **As of 2026-08-29 the apex binding is
-disabled in ACA** — only `www.automate-ethically.com` has a working managed
-certificate, while `astro.config.mjs`, canonical URLs, and the sitemap all
-assert the bare apex. This needs a real fix (bind + validate a managed cert for
-the apex, or flip `site` to the `www` host) before search engines or shared
-links can trust the canonical URL — tracked as an open item, not yet resolved
-by this change.
+Custom domain: `automate-ethically.com`. Both the apex and `www` have working
+managed certificates (`mc-ae-apex-v3`, `mc-cae-platform-www-automate-eth-5125`)
+as of 2026-08-30 — `astro.config.mjs`'s canonical `site` correctly matches
+the live apex.
 
 Repository secrets required for deploy: `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`,
 `AZURE_SUBSCRIPTION_ID` (the `sp-automate-ethically-deploy` OIDC identity
