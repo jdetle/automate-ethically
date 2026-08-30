@@ -53,3 +53,37 @@ export function clientIp(request: Request, fallback: string): string {
 	if (xff) return (xff.split(",")[0] ?? fallback).trim();
 	return fallback;
 }
+
+/**
+ * Verifies a Cloudflare Turnstile token server-side. Both API routes that
+ * spend real money (guide.ts, speech.ts) gate on this — and gate *closed*:
+ * if TURNSTILE_SECRET_KEY isn't set, callers must treat that as "refuse the
+ * request," not "skip the check." Rate limits and IP-based caps only slow
+ * down a scripted abuser; a passed human-verification challenge is the
+ * actual bar this site wants in front of anything that costs money per call.
+ */
+export async function verifyTurnstile(
+	token: string | undefined,
+	secretKey: string,
+	remoteIp: string,
+): Promise<boolean> {
+	if (!token) return false;
+	try {
+		const params = new URLSearchParams({
+			secret: secretKey,
+			response: token,
+			remoteip: remoteIp,
+		});
+		const res = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+			method: "POST",
+			headers: { "Content-Type": "application/x-www-form-urlencoded" },
+			body: params,
+		});
+		if (!res.ok) return false;
+		const data = (await res.json()) as { success?: boolean };
+		return data.success === true;
+	} catch (err) {
+		console.error("turnstile: verification request failed", err);
+		return false;
+	}
+}

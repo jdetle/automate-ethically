@@ -37,6 +37,7 @@ export function speechConfigured(): Promise<boolean> {
  */
 export async function speak(
 	text: string,
+	turnstileToken: string,
 	onLevel: (level: number, bands: Float32Array) => void,
 ): Promise<SpeechHandle> {
 	if (!(await speechConfigured())) throw new SpeechUnavailable("not configured");
@@ -49,7 +50,7 @@ export async function speak(
 	const response = await fetch("/api/speech", {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify({ text }),
+		body: JSON.stringify({ text, turnstileToken }),
 		signal: controller.signal,
 	});
 

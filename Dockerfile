@@ -16,6 +16,17 @@ COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 
 COPY . .
+
+# Vite inlines PUBLIC_-prefixed vars into the client bundle at build time —
+# unlike ANTHROPIC_API_KEY/OPENAI_API_KEY/TURNSTILE_SECRET_KEY, which are
+# read from the environment per-request at container runtime, this one has
+# to be present *here*, or the /guide bundle simply ships with no site key
+# baked in (safe: the widget then never renders, and both API routes still
+# fail closed regardless — see api-limits.ts). Not a secret: a Turnstile
+# site key is meant to be public, the same as any other widget key.
+ARG PUBLIC_TURNSTILE_SITE_KEY=""
+ENV PUBLIC_TURNSTILE_SITE_KEY=$PUBLIC_TURNSTILE_SITE_KEY
+
 RUN bun run build
 # `build` runs `astro build && pagefind --site dist/client` — if this ever
 # changes to invoke `astro build` alone, search silently stops indexing new

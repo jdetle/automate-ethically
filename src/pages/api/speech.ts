@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { budgetRemaining, spend } from "../../lib/api-limits";
+import { budgetRemaining, clientIp, spend, verifyTurnstile } from "../../lib/api-limits";
 
 export const prerender = false;
 
@@ -32,21 +32,41 @@ export const GET: APIRoute = async () => {
 	});
 };
 
-export const POST: APIRoute = async ({ request }) => {
-	const apiKey = import.meta.env.OPENAI_API_KEY;
-	if (!apiKey) {
-		return new Response(JSON.stringify({ error: "not configured" }), {
-			status: 503,
-			headers: { "Content-Type": "application/json" },
-		});
-	}
-
-	let body: { text?: string };
+export const POST: APIRoute = async ({ request, clientAddress }) => {
+	let body: { text?: string; turnstileToken?: string };
 	try {
 		body = await request.json();
 	} catch {
 		return new Response(JSON.stringify({ error: "bad request" }), {
 			status: 400,
+			headers: { "Content-Type": "application/json" },
+		});
+	}
+
+	// Fail CLOSED, same rule as guide.ts: an unconfigured secret is refused,
+	// not skipped. Speech is normally reached only after a guide reply
+	// already passed this same check, but it keeps its own verification
+	// rather than trusting that — a caller that skips /api/guide entirely
+	// must still clear this bar before OpenAI gets a request.
+	const ip = clientIp(request, clientAddress ?? "unknown");
+	const turnstileSecret = import.meta.env.TURNSTILE_SECRET_KEY;
+	if (!turnstileSecret) {
+		return new Response(JSON.stringify({ error: "not configured" }), {
+			status: 503,
+			headers: { "Content-Type": "application/json" },
+		});
+	}
+	if (!(await verifyTurnstile(body.turnstileToken, turnstileSecret, ip))) {
+		return new Response(JSON.stringify({ error: "verification failed" }), {
+			status: 403,
+			headers: { "Content-Type": "application/json" },
+		});
+	}
+
+	const apiKey = import.meta.env.OPENAI_API_KEY;
+	if (!apiKey) {
+		return new Response(JSON.stringify({ error: "not configured" }), {
+			status: 503,
 			headers: { "Content-Type": "application/json" },
 		});
 	}

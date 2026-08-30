@@ -22,6 +22,16 @@
 #                        guide's text-to-speech. Same treatment — a Container
 #                        Apps secret, never baked in. Without it, the guide
 #                        still works in text, just silently (no audio).
+#   TURNSTILE_SECRET_KEY  the Cloudflare Turnstile secret half. Gates both
+#                        /api/guide and /api/speech CLOSED — unlike the two
+#                        keys above, an unset TURNSTILE_SECRET_KEY does not
+#                        mean "skip the check," it means neither route runs
+#                        at all, regardless of whether the AI keys are set.
+#   PUBLIC_TURNSTILE_SITE_KEY  the Turnstile *site* key — not a secret (it's
+#                        meant to be public, embedded in the page), but it
+#                        still has to be passed as a build-arg, not a runtime
+#                        env var: Vite inlines PUBLIC_-prefixed vars into the
+#                        client bundle at build time (see Dockerfile).
 #   S10_INGEST_KEY      (once the automate-ethically s10 tenant is registered —
 #                        see README's Analytics section — used only by the
 #                        smoke-test step below, never baked into the image)
@@ -65,12 +75,14 @@ jobs:
         env:
           PLATFORM_ACR: ${{ secrets.PLATFORM_ACR }}
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          PUBLIC_TURNSTILE_SITE_KEY: ${{ secrets.PUBLIC_TURNSTILE_SITE_KEY }}
         run: |
           set -euo pipefail
           ACR_NAME="${PLATFORM_ACR%%.*}"
           TAG="${GITHUB_SHA::7}"
           az acr build --registry "$ACR_NAME" \
             --subscription "$AZURE_SUBSCRIPTION_ID" \
+            --build-arg "PUBLIC_TURNSTILE_SITE_KEY=$PUBLIC_TURNSTILE_SITE_KEY" \
             --image "automate-ethically:$TAG" --file Dockerfile .
           echo "IMAGE=${PLATFORM_ACR}/automate-ethically:$TAG" >> "$GITHUB_ENV"
 
@@ -79,11 +91,24 @@ jobs:
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
         run: |
           set -euo pipefail
           az extension add --name containerapp --upgrade --yes 2>/dev/null || true
 
           ENV_VARS=()
+
+          if [ -n "$TURNSTILE_SECRET_KEY" ]; then
+            az containerapp secret set \
+              --name ca-automate-ethically --resource-group rg-platform \
+              --subscription "$AZURE_SUBSCRIPTION_ID" \
+              --secrets "turnstile-secret-key=$TURNSTILE_SECRET_KEY" \
+              --output none
+            ENV_VARS+=("TURNSTILE_SECRET_KEY=secretref:turnstile-secret-key")
+          else
+            echo "TURNSTILE_SECRET_KEY not set — /api/guide and /api/speech will both answer 503 after this deploy, regardless of the AI keys below" >&2
+            ENV_VARS+=("TURNSTILE_SECRET_KEY=")
+          fi
 
           if [ -n "$ANTHROPIC_API_KEY" ]; then
             az containerapp secret set \

@@ -44,7 +44,7 @@ Three pillars:
 
 Zero client JavaScript is the default on every page — this is a deliberate part
 of the site's argument: a campaign against unaccountable automated systems runs
-essentially none of its own. Two narrow, named exceptions:
+essentially none of its own. A short, named list of exceptions:
 
 1. A small first-party pageview beacon (inline `<script>` in `Base.astro`) that
    POSTs to our own [s10](#analytics-s10) instance. No third-party origin, no
@@ -61,6 +61,11 @@ essentially none of its own. Two narrow, named exceptions:
    page — and falls back to a static SVG mark if WebGL is unavailable or
    `prefers-reduced-motion` is set. The conversation itself, in plain text,
    never depends on it.
+5. Cloudflare Turnstile, also on `/guide` only — the one *third-party-origin*
+   script on the site (`challenges.cloudflare.com`; every exception above is
+   self-hosted or same-origin). It's the human-verification gate in front of
+   the two routes that spend real money per call — see the guide's section
+   below for why this one gets a CSP exception nowhere else does.
 
 JSON-LD (`<script type="application/ld+json">`) is inert data, not executable
 script, and doesn't count against this rule.
@@ -102,10 +107,25 @@ other page is still plain prerendered HTML; see the adapter note in
   a real, documented limitation, not a hidden one; a shared store (e.g. the
   s10 Postgres instance) is the natural upgrade if traffic ever makes that
   assumption wrong.
+- **Gated by Cloudflare Turnstile, and gated *closed*.** Both routes verify a
+  fresh Turnstile token (`src/lib/api-limits.ts`'s `verifyTurnstile`) before
+  doing anything that costs money, and an unconfigured `TURNSTILE_SECRET_KEY`
+  is treated as a failed check, not a skipped one — `/api/guide` and
+  `/api/speech` both answer `503` regardless of whether the Anthropic/OpenAI
+  keys are set. This is the one deliberate third-party-script exception on
+  the site (`challenges.cloudflare.com`, named in the CSP comment in
+  `nginx-security-headers.conf`) — Turnstile has to load from Cloudflare's
+  own edge to mean anything. A fresh token is minted client-side
+  (`turnstile.execute()`) before every single call to either route, not once
+  per page load or per conversation.
 - **Requires `ANTHROPIC_API_KEY`** (text) **and, optionally, `OPENAI_API_KEY`**
-  (voice) as Container Apps secrets (see Deploy below). Without the first,
-  `/api/guide` answers `503`; without the second, the guide works in text
-  only, silently. Every other page is unaffected either way.
+  (voice) as Container Apps secrets, **plus `TURNSTILE_SECRET_KEY` and
+  `PUBLIC_TURNSTILE_SITE_KEY`** (see Deploy below — the site key is a
+  build-arg, not a runtime secret, since Vite has to inline it into the
+  client bundle). Without `TURNSTILE_SECRET_KEY`, neither route runs at all.
+  Without `ANTHROPIC_API_KEY`, `/api/guide` answers `503`. Without
+  `OPENAI_API_KEY`, the guide works in text only, silently. Every other page
+  is unaffected regardless of any of these.
 
 ## Analytics: s10
 
@@ -228,8 +248,13 @@ repo's Settings → Secrets UI):
 | `AZURE_TENANT_ID` | `9beece34-c503-42bd-a6fe-b9f3e1c49a84` |
 | `AZURE_SUBSCRIPTION_ID` | `353120d8-595d-4932-9127-df947b1c3f9d` |
 | `PLATFORM_ACR` | `acrplatform732abfgsg2zsg.azurecr.io` |
-| `ANTHROPIC_API_KEY` | (see [the guide's section above](#the-local-organizing-guide-guide)) — set directly on the live container as of 2026-08-30 |
+| `ANTHROPIC_API_KEY` | (see [the guide's section above](#the-local-organizing-guide-guide)) |
 | `OPENAI_API_KEY` | optional — powers the guide's voice; text works without it |
+| `TURNSTILE_SECRET_KEY` | required — without it, both `/api/guide` and `/api/speech` refuse to run, even if the two keys above are set |
+| `PUBLIC_TURNSTILE_SITE_KEY` | required (build-arg, not a runtime secret — see the guide's section above) — the widget never renders without it, which has the same fail-closed effect from the other direction |
+
+None of the four AI/verification secrets are set on the live container yet
+either, as of this writing — the guide currently answers `503` in production.
 
 Until `AZURE_CLIENT_ID`/`AZURE_TENANT_ID`/`AZURE_SUBSCRIPTION_ID`/`PLATFORM_ACR`
 are set, the deploy workflow's `azure/login` step fails immediately — it

@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
 import Anthropic from "@anthropic-ai/sdk";
-import { budgetRemaining, clientIp, rateLimited, spend } from "../../lib/api-limits";
+import { budgetRemaining, clientIp, rateLimited, spend, verifyTurnstile } from "../../lib/api-limits";
 
 // On-demand route — the one page in this site that isn't plain static HTML.
 // See astro.config.mjs and README's Analytics/Deploy sections for why.
@@ -72,15 +72,7 @@ function sseLine(event: string, data: unknown): string {
 }
 
 export const POST: APIRoute = async ({ request, clientAddress }) => {
-	const apiKey = import.meta.env.ANTHROPIC_API_KEY;
-	if (!apiKey) {
-		return new Response(
-			JSON.stringify({ error: "The guide isn't configured yet." }),
-			{ status: 503, headers: { "Content-Type": "application/json" } },
-		);
-	}
-
-	let body: { message?: string; history?: Turn[] };
+	let body: { message?: string; history?: Turn[]; turnstileToken?: string };
 	try {
 		body = await request.json();
 	} catch {
@@ -88,6 +80,35 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 			status: 400,
 			headers: { "Content-Type": "application/json" },
 		});
+	}
+
+	const ip = clientIp(request, clientAddress ?? "unknown");
+
+	// Fail CLOSED: this check runs before the Anthropic key check, not after.
+	// An unconfigured Turnstile secret is refused exactly like a failed
+	// verification — it is never treated as "skip the check." Rate limits and
+	// IP caps below only slow a scripted abuser down; this is the actual gate
+	// in front of anything that spends real money per call.
+	const turnstileSecret = import.meta.env.TURNSTILE_SECRET_KEY;
+	if (!turnstileSecret) {
+		return new Response(
+			JSON.stringify({ error: "Human verification isn't configured yet." }),
+			{ status: 503, headers: { "Content-Type": "application/json" } },
+		);
+	}
+	if (!(await verifyTurnstile(body.turnstileToken, turnstileSecret, ip))) {
+		return new Response(JSON.stringify({ error: "Verification failed — reload the page and try again." }), {
+			status: 403,
+			headers: { "Content-Type": "application/json" },
+		});
+	}
+
+	const apiKey = import.meta.env.ANTHROPIC_API_KEY;
+	if (!apiKey) {
+		return new Response(
+			JSON.stringify({ error: "The guide isn't configured yet." }),
+			{ status: 503, headers: { "Content-Type": "application/json" } },
+		);
 	}
 
 	const message = (body.message ?? "").trim();
@@ -99,7 +120,6 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 		});
 	}
 
-	const ip = clientIp(request, clientAddress ?? "unknown");
 	if (rateLimited(ip, MAX_CONVERSATIONS_PER_VISITOR_PER_DAY)) {
 		return new Response(
 			JSON.stringify({ error: "That's a lot of conversation for one day — come back tomorrow, or use /act directly." }),
