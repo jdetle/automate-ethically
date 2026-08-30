@@ -1,0 +1,191 @@
+---
+interface Props {
+	size?: number;
+}
+const { size = 140 } = Astro.props;
+---
+
+<!--
+	A point-cloud figure, adapted from the same technique jacquard's Jackie
+	orb uses (Three.js, a Fibonacci-sphere point cloud, state-driven color
+	and tempo) — in this site's own indigo/madder palette rather than a
+	direct reuse, since the two are different products with different design
+	systems. Falls back to a plain static SVG mark if WebGL is unavailable,
+	Three fails to load, or prefers-reduced-motion is set — the conversation
+	itself, in text, is never gated on this.
+
+	This is the site's fourth (and only per-page) JS exception — scoped to
+	/guide alone. See README's JS policy section.
+-->
+<div class="ae-orb" data-state="idle" style={`--orb-size: ${size}px;`}>
+	<canvas class="ae-orb-canvas" width={size} height={size} aria-hidden="true"></canvas>
+	<svg class="ae-orb-fallback" viewBox="0 0 100 100" width={size} height={size} aria-hidden="true">
+		<circle cx="50" cy="50" r="34" fill="none" stroke="currentColor" stroke-width="1.4" opacity="0.5" />
+		<circle cx="50" cy="50" r="22" fill="none" stroke="currentColor" stroke-width="1.4" opacity="0.35" />
+		<circle cx="50" cy="50" r="10" fill="currentColor" opacity="0.6" />
+	</svg>
+</div>
+
+<script>
+	// Three.js is imported dynamically so it never lands in the bundle for
+	// any page but this one — every other page on the site stays exactly
+	// zero-JS, and even here nothing downloads until this component mounts.
+	import { BANDS, orbState } from "../lib/guide-orb-state";
+
+	const host = document.querySelector<HTMLDivElement>(".ae-orb");
+	if (host) {
+		const canvas = host.querySelector<HTMLCanvasElement>(".ae-orb-canvas");
+		const fallback = host.querySelector<SVGElement>(".ae-orb-fallback");
+		const size = Number.parseInt(getComputedStyle(host).getPropertyValue("--orb-size")) || 140;
+
+		const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+		const useFallback = () => {
+			canvas?.style.setProperty("display", "none");
+			fallback?.style.setProperty("display", "block");
+		};
+
+		if (reduced || !canvas) {
+			useFallback();
+		} else {
+			(async () => {
+				let THREE: typeof import("three");
+				try {
+					THREE = await import("three");
+				} catch {
+					useFallback();
+					return;
+				}
+
+				let renderer: InstanceType<typeof THREE.WebGLRenderer>;
+				try {
+					renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+				} catch {
+					useFallback();
+					return;
+				}
+				renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+				renderer.setSize(size, size, false);
+
+				const scene = new THREE.Scene();
+				const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+				camera.position.z = 4.1;
+
+				const COUNT = 1800;
+				const golden = Math.PI * (3 - Math.sqrt(5));
+				const base = new Float32Array(COUNT * 3);
+				for (let i = 0; i < COUNT; i++) {
+					const y = 1 - (i / (COUNT - 1)) * 2;
+					const r = Math.sqrt(Math.max(0, 1 - y * y));
+					const th = golden * i;
+					base[i * 3] = Math.cos(th) * r;
+					base[i * 3 + 1] = y;
+					base[i * 3 + 2] = Math.sin(th) * r;
+				}
+				const pos = new Float32Array(base);
+				const geo = new THREE.BufferGeometry();
+				geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+
+				const isDark = () =>
+					window.matchMedia?.("(prefers-color-scheme: dark)").matches &&
+					document.documentElement.getAttribute("data-theme") !== "light";
+
+				const INDIGO = { light: 0x3b5386, dark: 0x8aa6e0 };
+				const MADDER = { light: 0xa04338, dark: 0xd98a7c };
+				const color = new THREE.Color(INDIGO.light);
+
+				const mat = new THREE.PointsMaterial({
+					size: 0.024,
+					color,
+					transparent: true,
+					opacity: 0.85,
+					blending: THREE.AdditiveBlending,
+					depthWrite: false,
+				});
+				scene.add(new THREE.Points(geo, mat));
+
+				let raf = 0;
+				let clock = 0;
+				let last = performance.now();
+				let smoothLevel = 0;
+				const bands = new Float32Array(BANDS);
+
+				const frame = (now: number) => {
+					const dt = Math.min(0.05, (now - last) / 1000);
+					last = now;
+					const cur = orbState.current;
+
+					const tempo = cur.state === "thinking" ? 2.0 : cur.state === "speaking" ? 1.1 : cur.state === "listening" ? 1.3 : 0.35;
+					clock += dt * tempo;
+					smoothLevel += (cur.level - smoothLevel) * Math.min(1, dt * 8);
+
+					for (let b = 0; b < BANDS; b++) {
+						const target = cur.spectrum[b] ?? 0;
+						const prev = bands[b] ?? 0;
+						const rate = target > prev ? 20 : 5;
+						bands[b] = prev + (target - prev) * Math.min(1, dt * rate);
+					}
+
+					const amp = 0.08 + smoothLevel * 0.32;
+					for (let i = 0; i < COUNT; i++) {
+						const x = base[i * 3] as number;
+						const y = base[i * 3 + 1] as number;
+						const z = base[i * 3 + 2] as number;
+						const w = Math.sin(x * 2.4 + clock) * Math.sin(y * 2.4 + clock * 0.8) * Math.sin(z * 2.4);
+						const band = bands[Math.min(BANDS - 1, ((y + 1) * 0.5 * BANDS) | 0)] as number;
+						const ripple = Math.sin(y * 9 - clock * 3.2) * band * 0.28;
+						const k = 1 + amp * w + ripple;
+						pos[i * 3] = x * k;
+						pos[i * 3 + 1] = y * k;
+						pos[i * 3 + 2] = z * k;
+					}
+					geo.attributes.position.needsUpdate = true;
+					scene.rotation.y = clock * 0.35;
+
+					const target = cur.state === "listening" ? MADDER : INDIGO;
+					const hex = isDark() ? target.dark : target.light;
+					color.setHex(hex);
+					mat.color.copy(color);
+
+					host.dataset.state = cur.state;
+					renderer.render(scene, camera);
+					raf = requestAnimationFrame(frame);
+				};
+				raf = requestAnimationFrame(frame);
+
+				canvas.addEventListener("webglcontextlost", (e) => {
+					e.preventDefault();
+					cancelAnimationFrame(raf);
+					useFallback();
+				});
+			})();
+		}
+	}
+</script>
+
+<style>
+	.ae-orb {
+		position: relative;
+		width: var(--orb-size);
+		height: var(--orb-size);
+		flex-shrink: 0;
+		color: var(--ae-indigo);
+		transition: color 300ms ease;
+	}
+
+	.ae-orb[data-state="listening"] {
+		color: var(--ae-madder);
+	}
+
+	.ae-orb-canvas {
+		display: block;
+		width: 100%;
+		height: 100%;
+	}
+
+	.ae-orb-fallback {
+		display: none;
+		position: absolute;
+		inset: 0;
+	}
+</style>

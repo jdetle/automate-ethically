@@ -14,6 +14,10 @@
 #   AZURE_TENANT_ID
 #   AZURE_SUBSCRIPTION_ID
 #   PLATFORM_ACR            acrplatform….azurecr.io
+#   ANTHROPIC_API_KEY   powers /api/guide (src/pages/api/guide.ts) — set as a
+#                        Container Apps secret at deploy time, never baked
+#                        into the image. Until this secret exists, the guide
+#                        answers 503 and the rest of the site is unaffected.
 #   S10_INGEST_KEY      (once the automate-ethically s10 tenant is registered —
 #                        see README's Analytics section — used only by the
 #                        smoke-test step below, never baked into the image)
@@ -69,13 +73,28 @@ jobs:
       - name: Roll the app
         env:
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           set -euo pipefail
           az extension add --name containerapp --upgrade --yes 2>/dev/null || true
+
+          if [ -n "$ANTHROPIC_API_KEY" ]; then
+            az containerapp secret set \
+              --name ca-automate-ethically --resource-group rg-platform \
+              --subscription "$AZURE_SUBSCRIPTION_ID" \
+              --secrets "anthropic-api-key=$ANTHROPIC_API_KEY" \
+              --output none
+            ANTHROPIC_ENV_VAR="ANTHROPIC_API_KEY=secretref:anthropic-api-key"
+          else
+            echo "ANTHROPIC_API_KEY not set — /api/guide will answer 503 after this deploy" >&2
+            ANTHROPIC_ENV_VAR="ANTHROPIC_API_KEY="
+          fi
+
           az containerapp update \
             --name ca-automate-ethically --resource-group rg-platform \
             --subscription "$AZURE_SUBSCRIPTION_ID" \
             --image "$IMAGE" \
+            --set-env-vars "$ANTHROPIC_ENV_VAR" \
             --output none
 
       - name: Say where it landed

@@ -206,6 +206,47 @@ main {
 	line-height: 1.7;
 }
 
+/* Markdown-rendered content (toolkit docs, FAQ, facts) produces real h2/h3s
+ * with nothing between them and the paragraph above — the global h1,h2,h3
+ * reset zeroes all heading margins, and .ae-prose never gave them back. */
+.ae-prose h2 {
+	margin: 44px 0 0;
+	font-size: clamp(22px, 2.6vw, 30px);
+	line-height: 1.25;
+}
+
+.ae-prose h3 {
+	margin: 34px 0 0;
+	font-size: clamp(18px, 2vw, 22px);
+	line-height: 1.3;
+}
+
+.ae-prose h2 + p,
+.ae-prose h3 + p {
+	margin-top: 12px;
+}
+
+.ae-prose ul,
+.ae-prose ol {
+	margin: 18px 0 0;
+	padding-left: 1.3em;
+}
+
+.ae-prose li {
+	font-size: 17px;
+	line-height: 1.7;
+}
+
+.ae-prose li + li {
+	margin-top: 8px;
+}
+
+.ae-prose blockquote {
+	margin: 22px 0 0;
+	padding-left: 18px;
+	border-left: 2px solid var(--ae-line-strong);
+}
+
 /* ---- Hero ---- */
 
 .ae-hero {

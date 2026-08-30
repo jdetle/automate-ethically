@@ -44,6 +44,11 @@ http {
     # the only path worth flooding. Keyed on the forwarded client rather than
     # $remote_addr, which is always the ingress.
     limit_req_zone $http_x_forwarded_for zone=telemetry:1m rate=30r/m;
+    # The guide calls a paid API per message; a real conversation is a handful
+    # of messages a minute, not thirty. The app itself also holds a per-day
+    # per-visitor cap and a global daily token budget (src/pages/api/guide.ts)
+    # — this is the fast, cheap first line before either of those runs.
+    limit_req_zone $http_x_forwarded_for zone=guide:1m rate=6r/m;
     limit_req_status 429;
 
     gzip on;
@@ -107,6 +112,26 @@ http {
 
             proxy_ssl_server_name on;
             proxy_pass https://ca-s10-ingest.purplewave-fe0ae338.eastus2.azurecontainerapps.io/v2/envelopes;
+        }
+
+        # The one route with a real backend: src/pages/api/guide.ts, served by
+        # the Node process docker-entrypoint.sh starts alongside nginx (see
+        # that file). Streamed (SSE), so buffering has to be off or the whole
+        # response would arrive in one burst at the end instead of live.
+        location = /api/guide {
+            include /etc/nginx/security-headers.conf;
+
+            limit_except POST { deny all; }
+            limit_req zone=guide burst=2 nodelay;
+            client_max_body_size 16k;
+
+            proxy_pass http://127.0.0.1:8081;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Forwarded-For $http_x_forwarded_for;
+            proxy_set_header Connection "";
+            proxy_buffering off;
+            proxy_read_timeout 120s;
         }
 
         # HTML is the one thing whose URL never changes when its content does,

@@ -29,4 +29,24 @@ if [ -z "$S10_INGEST_KEY" ]; then
     echo "nginx: S10_INGEST_KEY is unset; telemetry will be rejected upstream" >&2
 fi
 
+# The Node server backs exactly one route (/api/guide — everything else is
+# static files nginx serves directly). It listens on loopback only; nginx is
+# the one client and proxies to it (see nginx.conf.template). No real process
+# supervisor here — this is a small, occasional-traffic route, not the
+# request path most visitors ever touch — but a bare `node ... &` with no
+# restart would mean one crash silently kills the guide for the rest of the
+# container's life, so a minimal respawn loop runs in the background instead.
+export HOST=127.0.0.1
+export PORT=8081
+if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
+    echo "guide: ANTHROPIC_API_KEY is unset; /api/guide will answer 503" >&2
+fi
+(
+    while true; do
+        node /app/server/entry.mjs
+        echo "guide: server exited (code $?); restarting in 2s" >&2
+        sleep 2
+    done
+) &
+
 exec nginx -c /tmp/nginx.conf -g 'daemon off;'
