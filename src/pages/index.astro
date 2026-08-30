@@ -8,6 +8,15 @@ import PillarCard from "../components/PillarCard.astro";
 	title="Automate Ethically"
 	description="A movement for automation with a human in the loop: laws that keep a person accountable for every automated decision, software built on that principle, and help retraining for durable work."
 >
+		<script type="application/ld+json" set:html={JSON.stringify({
+			"@context": "https://schema.org",
+			"@type": "Organization",
+			name: "Automate Ethically",
+			url: "https://automate-ethically.com",
+			logo: "https://automate-ethically.com/favicon.svg",
+			sameAs: ["https://jdetle.com", "https://github.com/jdetle/automate-ethically"],
+		})} />
+
 		<!-- DRAFT: rewrite — copy task 1: hero headline + subhead -->
 		<section class="ae-hero" aria-labelledby="hero-title">
 			<p class="ae-eyebrow">A movement for ethical automation</p>
@@ -115,7 +124,8 @@ import PillarCard from "../components/PillarCard.astro";
 					and Montana already requires a human to review AI-driven agency
 					decisions. Facts checked Aug 2026 — sources and our correction
 					policy live in the open at
-					<a href="/facts">FACTS.md</a>.
+					<a href="/facts">FACTS.md</a>. See
+					<a href="/states">what's already real, state by state</a>.
 				</p>
 			</div>
 		</section>

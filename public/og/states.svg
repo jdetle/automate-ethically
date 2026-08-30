@@ -1,0 +1,25 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+	<rect width="1200" height="630" fill="#f3efe6"/>
+	<g fill="#3b5386" opacity="0.14">
+		<circle cx="60" cy="60" r="6"/>
+		<circle cx="90" cy="60" r="6"/>
+		<circle cx="60" cy="90" r="6"/>
+		<circle cx="1140" cy="570" r="6"/>
+		<circle cx="1110" cy="570" r="6"/>
+		<circle cx="1140" cy="540" r="6"/>
+	</g>
+	<rect x="72" y="72" width="230" height="46" rx="23" fill="none" stroke="#a04338" stroke-width="2" stroke-dasharray="4 5"/>
+	<text x="90" y="102" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="20" fill="#232a38">automate ethically</text>
+
+	<text x="72" y="260" font-family="Georgia, 'Iowan Old Style', serif" font-size="60" font-weight="600" fill="#232a38">Every state is</text>
+	<text x="72" y="336" font-family="Georgia, 'Iowan Old Style', serif" font-size="60" font-weight="600" fill="#232a38">writing these rules.</text>
+
+	<g stroke="#a04338" stroke-width="3" stroke-linecap="round">
+		<circle cx="76" cy="410" r="5" fill="#a04338" stroke="none"/>
+		<line x1="90" y1="410" x2="1128" y2="410" stroke-dasharray="16 12"/>
+		<circle cx="1140" cy="410" r="5" fill="#a04338" stroke="none"/>
+	</g>
+
+	<text x="72" y="470" font-family="Georgia, 'Iowan Old Style', serif" font-size="24" font-style="italic" fill="#5b6474">1,561 bills, 45 states. Here's what's already real.</text>
+	<text x="72" y="560" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="26" fill="#5b6474">automate-ethically.com/states</text>
+</svg>

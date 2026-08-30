@@ -1,0 +1,88 @@
+---
+import Page from "../layouts/Page.astro";
+import Stitch from "../components/Stitch.astro";
+
+// Deliberately a curated table, not a database. Per the site's evidence
+// policy (FACTS.md: citation adjacent to claim, 6-month recheck, 48-hour
+// correction), every row here is a real maintenance commitment — cap this
+// list at roughly 10 rows. If it wants to grow past that, the right fix is
+// rethinking the architecture (e.g. per-state pages with named owners), not
+// silently growing this table past what one person can keep current.
+---
+
+<Page
+	title="The state landscape — Automate Ethically"
+	description="Every state is writing these rules right now. Here's what's already real, and where to watch what's still moving."
+	ogImage="/og/states.png"
+>
+	<section class="ae-hero" aria-labelledby="states-title">
+		<p class="ae-eyebrow">The landscape</p>
+		<!-- DRAFT: rewrite — copy task 25: /states framing -->
+		<h1 id="states-title">Every state is writing these rules.</h1>
+		<p class="ae-hero-sub">
+			1,561 AI-related bills were introduced in 45 states this session
+			(<a href="https://www.multistate.ai/artificial-intelligence-ai-legislation">multistate.ai</a>,
+			Mar 2026) — far more than one site can track reliably. The
+			<a href="https://www.multistate.ai/artificial-intelligence-ai-legislation">multistate.ai
+			tracker</a> is the live source of truth for everything moving right
+			now. Below is a short, hand-checked list of what's already real.
+		</p>
+	</section>
+
+	<Stitch />
+
+	<section class="ae-section" aria-label="State-by-state examples">
+		<div class="ae-container">
+			<div class="ae-prose">
+				<table>
+					<thead>
+						<tr>
+							<th>State</th>
+							<th>Status</th>
+							<th>Checked</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td><strong>Montana</strong></td>
+							<td>
+								HB 178 already requires human review of AI-driven decisions
+								made by state agencies — the closest existing precedent to
+								what this movement is asking cities and counties to adopt.
+								(<a href="https://www.ebglaw.com/insights/publications/ai-legislation-2026-legislative-wrap-up">Epstein
+								Becker Green</a>)
+							</td>
+							<td>Aug 2026</td>
+						</tr>
+						<tr>
+							<td><strong>Colorado</strong></td>
+							<td>
+								An amended AI Act, effective January 1, 2027, preserves a
+								right to "meaningful human review of adverse automated
+								decisions" for consequential decisions — employment, housing,
+								lending, healthcare, and similar. Not yet in effect.
+								(<a href="https://www.hunton.com/privacy-and-cybersecurity-law-blog/colorado-ai-act-amended-and-effective-date-delayed">Hunton
+								Andrews Kurth</a>)
+							</td>
+							<td>Aug 2026</td>
+						</tr>
+					</tbody>
+				</table>
+				<p class="ae-aside">
+					This table is short on purpose — every row here is a promise we
+					keep checking. See our
+					<a href="/facts">correction policy</a> for how that works, or the
+					<a href="https://www.multistate.ai/artificial-intelligence-ai-legislation">multistate.ai
+					tracker</a> for the fuller, faster-moving picture.
+				</p>
+			</div>
+
+			<p class="ae-plain ae-states-cta">
+				Don't see your state? That's the point — it isn't decided yet.
+			</p>
+			<div class="ae-cta-row">
+				<a class="ae-btn ae-btn--primary" href="/act#lead">Tell us what's happening in your town</a>
+			</div>
+		</div>
+	</section>
+</Page>
