@@ -18,6 +18,10 @@
 #                        Container Apps secret at deploy time, never baked
 #                        into the image. Until this secret exists, the guide
 #                        answers 503 and the rest of the site is unaffected.
+#   OPENAI_API_KEY      powers /api/speech (src/pages/api/speech.ts), the
+#                        guide's text-to-speech. Same treatment — a Container
+#                        Apps secret, never baked in. Without it, the guide
+#                        still works in text, just silently (no audio).
 #   S10_INGEST_KEY      (once the automate-ethically s10 tenant is registered —
 #                        see README's Analytics section — used only by the
 #                        smoke-test step below, never baked into the image)
@@ -74,9 +78,12 @@ jobs:
         env:
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           set -euo pipefail
           az extension add --name containerapp --upgrade --yes 2>/dev/null || true
+
+          ENV_VARS=()
 
           if [ -n "$ANTHROPIC_API_KEY" ]; then
             az containerapp secret set \
@@ -84,17 +91,29 @@ jobs:
               --subscription "$AZURE_SUBSCRIPTION_ID" \
               --secrets "anthropic-api-key=$ANTHROPIC_API_KEY" \
               --output none
-            ANTHROPIC_ENV_VAR="ANTHROPIC_API_KEY=secretref:anthropic-api-key"
+            ENV_VARS+=("ANTHROPIC_API_KEY=secretref:anthropic-api-key")
           else
             echo "ANTHROPIC_API_KEY not set — /api/guide will answer 503 after this deploy" >&2
-            ANTHROPIC_ENV_VAR="ANTHROPIC_API_KEY="
+            ENV_VARS+=("ANTHROPIC_API_KEY=")
+          fi
+
+          if [ -n "$OPENAI_API_KEY" ]; then
+            az containerapp secret set \
+              --name ca-automate-ethically --resource-group rg-platform \
+              --subscription "$AZURE_SUBSCRIPTION_ID" \
+              --secrets "openai-api-key=$OPENAI_API_KEY" \
+              --output none
+            ENV_VARS+=("OPENAI_API_KEY=secretref:openai-api-key")
+          else
+            echo "OPENAI_API_KEY not set — the guide will stay text-only after this deploy" >&2
+            ENV_VARS+=("OPENAI_API_KEY=")
           fi
 
           az containerapp update \
             --name ca-automate-ethically --resource-group rg-platform \
             --subscription "$AZURE_SUBSCRIPTION_ID" \
             --image "$IMAGE" \
-            --set-env-vars "$ANTHROPIC_ENV_VAR" \
+            --set-env-vars "${ENV_VARS[@]}" \
             --output none
 
       - name: Say where it landed

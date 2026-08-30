@@ -28,8 +28,13 @@ import GuideOrb from "../components/GuideOrb.astro";
 		<div class="ae-container ae-guide">
 			<div class="ae-guide-head">
 				<GuideOrb size={140} />
-				<div class="ae-guide-status" id="guide-status" role="status" aria-live="polite">
-					Ready when you are.
+				<div class="ae-guide-head-text">
+					<div class="ae-guide-status" id="guide-status" role="status" aria-live="polite">
+						Ready when you are.
+					</div>
+					<button type="button" class="ae-guide-voice" id="guide-voice" hidden aria-pressed="false">
+						voice off
+					</button>
 				</div>
 			</div>
 
@@ -57,7 +62,10 @@ import GuideOrb from "../components/GuideOrb.astro";
 </Page>
 
 <script>
-	import { decayOrb, pulseFromText, setOrbConversationState } from "../lib/guide-orb-state";
+	import { decayOrb, pulseFromText, setLevelAndSpectrum, setOrbConversationState } from "../lib/guide-orb-state";
+	import { speak, speechConfigured, type SpeechHandle } from "../lib/speech-playback";
+
+	const VOICE_KEY = "ae-guide-voice";
 
 	interface Turn {
 		role: "user" | "assistant";
@@ -69,9 +77,65 @@ import GuideOrb from "../components/GuideOrb.astro";
 	const sendBtn = document.querySelector<HTMLButtonElement>("#guide-send");
 	const transcript = document.querySelector<HTMLDivElement>("#guide-transcript");
 	const status = document.querySelector<HTMLDivElement>("#guide-status");
+	const voiceBtn = document.querySelector<HTMLButtonElement>("#guide-voice");
 
 	const history: Turn[] = [];
 	let busy = false;
+
+	// Silent until asked, same reasoning as jacquard: speech that starts on
+	// its own is startling, and the toggle only appears once we know a voice
+	// is actually configured server-side.
+	let muted = true;
+	let currentSpeech: SpeechHandle | null = null;
+
+	void speechConfigured().then((available) => {
+		if (!available || !voiceBtn) return;
+		try {
+			muted = localStorage.getItem(VOICE_KEY) !== "on";
+		} catch {
+			/* stay muted */
+		}
+		voiceBtn.hidden = false;
+		voiceBtn.textContent = muted ? "voice off" : "voice on";
+		voiceBtn.setAttribute("aria-pressed", String(!muted));
+		voiceBtn.addEventListener("click", () => {
+			muted = !muted;
+			voiceBtn.textContent = muted ? "voice off" : "voice on";
+			voiceBtn.setAttribute("aria-pressed", String(!muted));
+			try {
+				localStorage.setItem(VOICE_KEY, muted ? "off" : "on");
+			} catch {
+				/* non-fatal */
+			}
+			if (muted) {
+				currentSpeech?.cancel();
+				currentSpeech = null;
+			}
+		});
+	});
+
+	// Speaks the finished reply. Never blocks the conversation — a person can
+	// send the next message while the last reply is still being read aloud,
+	// same as jacquard. Silent fallback to the text-pulse already shown while
+	// streaming if speech isn't configured or the call fails; nothing is
+	// lost, the reply is already on screen either way.
+	async function sayItOutLoud(text: string) {
+		currentSpeech?.cancel();
+		currentSpeech = null;
+		if (muted || !text.trim()) return;
+		try {
+			const handle = await speak(text, setLevelAndSpectrum);
+			currentSpeech = handle;
+			setOrbConversationState("speaking");
+			await handle.done;
+			if (currentSpeech === handle) {
+				currentSpeech = null;
+				setOrbConversationState("idle");
+			}
+		} catch {
+			/* no voice this time — the text is already on screen */
+		}
+	}
 
 	function addTurn(role: Turn["role"], text: string): HTMLDivElement {
 		const row = document.createElement("div");
@@ -163,10 +227,11 @@ import GuideOrb from "../components/GuideOrb.astro";
 			}
 
 			history.push({ role: "assistant", text: replyText });
+			void sayItOutLoud(replyText);
 		} catch {
 			if (replyP) replyP.textContent = "Couldn't reach the guide — check your connection and try again.";
 		} finally {
-			setOrbConversationState("idle");
+			if (!currentSpeech) setOrbConversationState("idle");
 			if (status) status.textContent = "Ready when you are.";
 			busy = false;
 			if (sendBtn) sendBtn.disabled = false;
@@ -202,9 +267,35 @@ import GuideOrb from "../components/GuideOrb.astro";
 		gap: 20px;
 	}
 
+	.ae-guide-head-text {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		align-items: flex-start;
+	}
+
 	.ae-guide-status {
 		font-size: 14px;
 		color: var(--ae-muted);
+	}
+
+	.ae-guide-voice {
+		padding: 4px 12px;
+		border-radius: 999px;
+		border: 1px solid var(--ae-line-strong);
+		background: transparent;
+		color: var(--ae-muted);
+		font-size: 11px;
+		font-weight: 600;
+		letter-spacing: var(--ae-tracking-chip);
+		text-transform: uppercase;
+		cursor: pointer;
+	}
+
+	.ae-guide-voice[aria-pressed="true"] {
+		border-color: var(--ae-madder);
+		color: var(--ae-madder);
+		background: var(--ae-madder-wash);
 	}
 
 	.ae-guide-transcript {

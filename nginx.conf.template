@@ -49,6 +49,8 @@ http {
     # per-visitor cap and a global daily token budget (src/pages/api/guide.ts)
     # — this is the fast, cheap first line before either of those runs.
     limit_req_zone $http_x_forwarded_for zone=guide:1m rate=6r/m;
+    # One speech call per guide reply — same shape as the guide zone above.
+    limit_req_zone $http_x_forwarded_for zone=speech:1m rate=6r/m;
     limit_req_status 429;
 
     gzip on;
@@ -123,6 +125,25 @@ http {
 
             limit_except POST { deny all; }
             limit_req zone=guide burst=2 nodelay;
+            client_max_body_size 16k;
+
+            proxy_pass http://127.0.0.1:8081;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Forwarded-For $http_x_forwarded_for;
+            proxy_set_header Connection "";
+            proxy_buffering off;
+            proxy_read_timeout 120s;
+        }
+
+        # Text-to-speech for the guide: src/pages/api/speech.ts, same Node
+        # process as /api/guide. GET is the "is this configured" probe the
+        # client makes once per page load; POST streams PCM audio back.
+        location = /api/speech {
+            include /etc/nginx/security-headers.conf;
+
+            limit_except GET POST { deny all; }
+            limit_req zone=speech burst=2 nodelay;
             client_max_body_size 16k;
 
             proxy_pass http://127.0.0.1:8081;
