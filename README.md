@@ -55,9 +55,48 @@ essentially none of its own. Two narrow, named exceptions:
    index and UI script are generated at build time and served from our own
    domain, not fetched from a third party. Scoped to that one page; the rest
    of the site works with search unavailable.
+4. A Three.js point-cloud figure on `/guide` (`src/components/GuideOrb.astro`)
+   that visualizes the conversation with the local-organizing guide below.
+   Dynamically imported — the ~190KB gzipped bundle never loads on any other
+   page — and falls back to a static SVG mark if WebGL is unavailable or
+   `prefers-reduced-motion` is set. The conversation itself, in plain text,
+   never depends on it.
 
 JSON-LD (`<script type="application/ld+json">`) is inert data, not executable
 script, and doesn't count against this rule.
+
+## The local-organizing guide (`/guide`)
+
+The one page on this site with a real backend. `src/pages/api/guide.ts` is
+Astro's single on-demand route (`export const prerender = false`) — every
+other page is still plain prerendered HTML; see the adapter note in
+`astro.config.mjs`.
+
+- **Model:** `claude-opus-5` via `@anthropic-ai/sdk`, with the built-in
+  `web_search_20260209` tool so it can find what's actually organizing near
+  someone rather than inventing it. The system prompt is explicit and
+  non-negotiable: never solicit money or use fundraising language, never
+  imply a PAC exists, never invent a specific group/meeting/contact, and say
+  plainly when a search finds nothing — the same anti-hallucination
+  discipline FACTS.md holds the rest of the site to, applied to a model that
+  can otherwise sound confident while being wrong.
+- **Location is asked in conversation, never stored** — consistent with the
+  rest of the site's no-persistent-data stance (see the footer's privacy
+  line). Each conversation's history lives only in the browser tab.
+- **Streamed** (Server-Sent Events) so replies appear as they're generated;
+  the client-side orb visualizes the arriving text (a real-time pulse keyed
+  to each chunk), not synthesized speech — there's no second paid API here,
+  only the one Claude call.
+- **Cost and abuse controls**, all in `guide.ts`: a hard daily token budget
+  across all visitors, a per-visitor daily conversation cap, and an nginx-level
+  request-rate limit in front of both. All three are in-memory and reset if
+  the container restarts or scales past one replica — a real, documented
+  limitation, not a hidden one; a shared store (e.g. the s10 Postgres
+  instance) is the natural upgrade if traffic ever makes that assumption
+  wrong.
+- **Requires `ANTHROPIC_API_KEY`** as a Container Apps secret (see Deploy
+  below). Without it, `/api/guide` answers `503` and every other page is
+  unaffected — this is the state the site ships in until that secret is set.
 
 ## Analytics: s10
 
@@ -132,12 +171,22 @@ Azure Container Apps. `az acr build` builds the image on ACR (no Docker daemon
 needed on the runner) and pushes it as `automate-ethically:<sha7>` to the
 platform ACR; `az containerapp update` rolls `ca-automate-ethically` in
 `rg-platform` (shared `cae-platform` environment, alongside `jacquard` and
-`s10`). CI (`.github/workflows/ci.yml`) runs lint + build on GitHub-hosted
-`ubuntu-latest` on every PR and push; the deploy workflow
-(`.github/workflows/deploy-azure.yml`) runs on push to `main` and via manual
-dispatch, on the platform's shared **self-hosted runner fleet**
+`s10`). CI (`.github/workflows/ci.yml`) runs lint + typecheck (`astro check`)
++ build on GitHub-hosted `ubuntu-latest` on every PR and push; the deploy
+workflow (`.github/workflows/deploy-azure.yml`) runs on push to `main` and
+via manual dispatch, on the platform's shared **self-hosted runner fleet**
 (`runs-on: [self-hosted, linux, x64, azcaj]` — an Azure Container Apps Job,
 scale-to-zero, defined in `jdetle/platform`'s `infra/modules/platform-runners.bicep`).
+
+The container runs two processes: nginx (everything, as always) and a small
+Node server that backs only `/api/guide` (`docker-entrypoint.sh` starts both;
+nginx proxies just that one path — see `nginx.conf.template`). Astro's Node
+adapter ships its own runtime dependencies unbundled (Astro core, `sharp`,
+`@anthropic-ai/sdk`, ...), so the image installs a production-only
+`node_modules` natively inside the Alpine final stage rather than copying it
+from the Debian build stage — `sharp` resolves a platform-specific prebuilt
+binary at install time, and copying a glibc build onto musl fails at
+container start, not at build time.
 
 Auth is **OIDC federated credentials**, not a stored secret:
 `sp-automate-ethically-deploy` trusts only
@@ -159,7 +208,20 @@ managed certificates (`mc-ae-apex-v3`, `mc-cae-platform-www-automate-eth-5125`)
 as of 2026-08-30 — `astro.config.mjs`'s canonical `site` correctly matches
 the live apex.
 
-Repository secrets required for deploy: `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`,
-`AZURE_SUBSCRIPTION_ID` (the `sp-automate-ethically-deploy` OIDC identity
-above), `PLATFORM_ACR`, `PLATFORM_SUB_ID`
-(`acrplatform….azurecr.io`).
+Repository secrets required for deploy — **none of these are set yet** (a
+tool-permission guard blocked writing them from an automated session, by
+design; they need to be set by hand, once, via `gh secret set <name>` or the
+repo's Settings → Secrets UI):
+
+| Secret | Value |
+|---|---|
+| `AZURE_CLIENT_ID` | `7a850e7a-9bef-411b-8d99-5ffb0c8abf16` (`sp-automate-ethically-deploy`'s app/client ID) |
+| `AZURE_TENANT_ID` | `9beece34-c503-42bd-a6fe-b9f3e1c49a84` |
+| `AZURE_SUBSCRIPTION_ID` | `353120d8-595d-4932-9127-df947b1c3f9d` |
+| `PLATFORM_ACR` | `acrplatform732abfgsg2zsg.azurecr.io` |
+| `ANTHROPIC_API_KEY` | (see [the guide's section above](#the-local-organizing-guide-guide)) |
+
+Until these are set, the deploy workflow's `azure/login` step fails
+immediately — it isn't just the two GitHub-UI runner steps above. The site
+itself is unaffected: every deploy so far has gone out via direct `az cli`
+calls, verified live, while this pipeline was being built.

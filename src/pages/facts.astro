@@ -1,5 +1,6 @@
 ---
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { marked } from "marked";
 import Page from "../layouts/Page.astro";
 import Stitch from "../components/Stitch.astro";
@@ -7,10 +8,14 @@ import Stitch from "../components/Stitch.astro";
 // Renders the repo's actual FACTS.md at build time — one source of truth,
 // so this page can never silently drift from the registry that governs
 // every cited number on the site.
-const factsMarkdown = readFileSync(
-	new URL("../../FACTS.md", import.meta.url),
-	"utf-8",
-);
+//
+// Resolved from process.cwd(), not import.meta.url: once an adapter is
+// configured, Astro relocates page modules into dist/server/chunks/ during
+// the build, and an import.meta.url-relative path silently points at a
+// FACTS.md that was never copied there. `bun run build` always runs from
+// the repo root in dev, prerender, and server-adapter builds alike, so cwd
+// is the one anchor that's stable across all three.
+const factsMarkdown = readFileSync(join(process.cwd(), "FACTS.md"), "utf-8");
 const factsHtml = await marked.parse(factsMarkdown);
 ---
 
