@@ -1,6 +1,12 @@
 import type { APIRoute } from "astro";
 import Anthropic from "@anthropic-ai/sdk";
 import { budgetRemaining, clientIp, rateLimited, spend, verifyTurnstile } from "../../lib/api-limits";
+import {
+	detectOutputViolation,
+	INJECTION_REINFORCEMENT,
+	looksLikeInjectionAttempt,
+	OUTPUT_VIOLATION_MESSAGE,
+} from "../../lib/guide-guardrails";
 import { initSentry, Sentry } from "../../lib/sentry";
 
 // On-demand route — the one page in this site that isn't plain static HTML.
@@ -153,16 +159,35 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 		{ role: "user", content: message },
 	];
 
+	// Heuristic only, never a block (see guide-guardrails.ts) — a false
+	// positive just means an ordinary question gets an extra reminder the
+	// model didn't need. A real attempt gets the same reinforcement, silently:
+	// the response looks identical either way, which is the point.
+	const injectionSuspected = looksLikeInjectionAttempt(message);
+	if (injectionSuspected) {
+		Sentry.captureMessage("guide: possible prompt-injection attempt", {
+			level: "warning",
+			extra: { ip, snippet: message.slice(0, 200) },
+		});
+	}
+	const systemForCall = injectionSuspected ? SYSTEM_PROMPT + INJECTION_REINFORCEMENT : SYSTEM_PROMPT;
+
 	const stream = new ReadableStream({
 		async start(controller) {
 			const enc = new TextEncoder();
 			const send = (event: string, data: unknown) => controller.enqueue(enc.encode(sseLine(event, data)));
 
+			// Set the moment the output guardrail fires (below) — checked
+			// everywhere afterward so a stream we deliberately killed never
+			// gets treated as a normal failure.
+			let violation: ReturnType<typeof detectOutputViolation> = null;
+			let accumulated = "";
+
 			try {
 				const anthropicStream = client.messages.stream({
 					model: "claude-opus-5",
 					max_tokens: MAX_TOKENS_PER_REPLY,
-					system: SYSTEM_PROMPT,
+					system: systemForCall,
 					messages,
 					tools: [
 						{
@@ -174,6 +199,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 				});
 
 				anthropicStream.on("streamEvent", (event) => {
+					if (violation) return;
 					if (
 						event.type === "content_block_start" &&
 						event.content_block.type === "server_tool_use"
@@ -184,14 +210,43 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 						event.type === "content_block_delta" &&
 						event.delta.type === "text_delta"
 					) {
+						accumulated += event.delta.text;
+						// Output guardrail: the last check before this model's own
+						// words reach a real person, independent of whatever the
+						// system prompt says. Checked on every chunk so a
+						// violation is caught within a few tokens, not after the
+						// whole reply has already streamed.
+						const brokenRule = detectOutputViolation(accumulated);
+						if (brokenRule) {
+							violation = brokenRule;
+							Sentry.captureMessage(`guide: output guardrail triggered (${brokenRule})`, {
+								level: "error",
+								extra: { ip, snippet: accumulated.slice(0, 400) },
+							});
+							send("error", { message: OUTPUT_VIOLATION_MESSAGE[brokenRule] });
+							anthropicStream.abort();
+							return;
+						}
 						send("phase", { phase: "speaking" });
 						send("text", { text: event.delta.text });
 					}
 				});
 
-				const final = await anthropicStream.finalMessage();
-				spend(BUDGET_POOL, (final.usage?.output_tokens ?? 0) + (final.usage?.input_tokens ?? 0));
-				send("done", { stopReason: final.stop_reason });
+				let final: Anthropic.Message | null = null;
+				try {
+					final = await anthropicStream.finalMessage();
+				} catch (err) {
+					// abort() above rejects finalMessage() by design — that's our
+					// own guardrail firing, not a real failure, and it already
+					// sent its own "error" event above.
+					if (!violation) throw err;
+				}
+				if (final) {
+					spend(BUDGET_POOL, (final.usage?.output_tokens ?? 0) + (final.usage?.input_tokens ?? 0));
+				}
+				if (!violation) {
+					send("done", { stopReason: final?.stop_reason ?? "end_turn" });
+				}
 			} catch (err) {
 				console.error("guide: anthropic call failed", err);
 				Sentry.captureException(err);
