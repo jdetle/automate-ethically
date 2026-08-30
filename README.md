@@ -83,20 +83,29 @@ other page is still plain prerendered HTML; see the adapter note in
 - **Location is asked in conversation, never stored** — consistent with the
   rest of the site's no-persistent-data stance (see the footer's privacy
   line). Each conversation's history lives only in the browser tab.
-- **Streamed** (Server-Sent Events) so replies appear as they're generated;
-  the client-side orb visualizes the arriving text (a real-time pulse keyed
-  to each chunk), not synthesized speech — there's no second paid API here,
-  only the one Claude call.
-- **Cost and abuse controls**, all in `guide.ts`: a hard daily token budget
-  across all visitors, a per-visitor daily conversation cap, and an nginx-level
-  request-rate limit in front of both. All three are in-memory and reset if
-  the container restarts or scales past one replica — a real, documented
-  limitation, not a hidden one; a shared store (e.g. the s10 Postgres
-  instance) is the natural upgrade if traffic ever makes that assumption
-  wrong.
-- **Requires `ANTHROPIC_API_KEY`** as a Container Apps secret (see Deploy
-  below). Without it, `/api/guide` answers `503` and every other page is
-  unaffected — this is the state the site ships in until that secret is set.
+- **Streamed** (Server-Sent Events) so replies appear as they're generated.
+- **Voice, opt-in and real:** `src/pages/api/speech.ts` proxies OpenAI TTS
+  (`tts-1`, 24kHz mono PCM), streamed the same way jacquard's Cedar does —
+  the client (`src/lib/speech-playback.ts`) schedules audio as it arrives
+  and analyzes the actual output with a Web Audio `AnalyserNode`, so the orb
+  breathes on real amplitude and a real 12-band spectrum while the guide
+  talks, not a simulated one. Silent by default (a "voice on/off" toggle
+  appears only once `/api/speech` reports itself configured); the choice is
+  remembered in `localStorage`, not a cookie. If speech isn't configured or
+  an OpenAI call fails, playback falls back to `guide-orb-state.ts`'s
+  text-arrival pulse — the conversation never depends on audio working.
+- **Cost and abuse controls**, in `guide.ts`/`speech.ts`/`api-limits.ts`: a
+  hard daily token budget (text) and a separate daily character budget
+  (speech) across all visitors, a per-visitor daily conversation cap, and an
+  nginx-level request-rate limit in front of both routes. All of these are
+  in-memory and reset if the container restarts or scales past one replica —
+  a real, documented limitation, not a hidden one; a shared store (e.g. the
+  s10 Postgres instance) is the natural upgrade if traffic ever makes that
+  assumption wrong.
+- **Requires `ANTHROPIC_API_KEY`** (text) **and, optionally, `OPENAI_API_KEY`**
+  (voice) as Container Apps secrets (see Deploy below). Without the first,
+  `/api/guide` answers `503`; without the second, the guide works in text
+  only, silently. Every other page is unaffected either way.
 
 ## Analytics: s10
 
@@ -219,9 +228,11 @@ repo's Settings → Secrets UI):
 | `AZURE_TENANT_ID` | `9beece34-c503-42bd-a6fe-b9f3e1c49a84` |
 | `AZURE_SUBSCRIPTION_ID` | `353120d8-595d-4932-9127-df947b1c3f9d` |
 | `PLATFORM_ACR` | `acrplatform732abfgsg2zsg.azurecr.io` |
-| `ANTHROPIC_API_KEY` | (see [the guide's section above](#the-local-organizing-guide-guide)) |
+| `ANTHROPIC_API_KEY` | (see [the guide's section above](#the-local-organizing-guide-guide)) — set directly on the live container as of 2026-08-30 |
+| `OPENAI_API_KEY` | optional — powers the guide's voice; text works without it |
 
-Until these are set, the deploy workflow's `azure/login` step fails
-immediately — it isn't just the two GitHub-UI runner steps above. The site
-itself is unaffected: every deploy so far has gone out via direct `az cli`
-calls, verified live, while this pipeline was being built.
+Until `AZURE_CLIENT_ID`/`AZURE_TENANT_ID`/`AZURE_SUBSCRIPTION_ID`/`PLATFORM_ACR`
+are set, the deploy workflow's `azure/login` step fails immediately — it
+isn't just the two GitHub-UI runner steps above. The site itself is
+unaffected: every deploy so far has gone out via direct `az cli` calls,
+verified live, while this pipeline was being built.

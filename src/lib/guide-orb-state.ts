@@ -51,6 +51,17 @@ export function pulseFromText(chunk: string) {
 	}
 }
 
+/**
+ * Fed by real audio analysis (speech-playback.ts) when text-to-speech is
+ * configured and working — the actual driver when it's available, with
+ * pulseFromText/decayOrb as the fallback when it isn't.
+ */
+export function setLevelAndSpectrum(level: number, bands: Float32Array) {
+	orbState.current.level = level;
+	const dest = orbState.current.spectrum;
+	for (let b = 0; b < BANDS; b++) dest[b] = bands[b] ?? 0;
+}
+
 export function decayOrb(dt: number) {
 	orbState.current.level = Math.max(0, orbState.current.level - dt * 0.6);
 	const bands = orbState.current.spectrum;

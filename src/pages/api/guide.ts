@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import Anthropic from "@anthropic-ai/sdk";
+import { budgetRemaining, clientIp, rateLimited, spend } from "../../lib/api-limits";
 
 // On-demand route — the one page in this site that isn't plain static HTML.
 // See astro.config.mjs and README's Analytics/Deploy sections for why.
@@ -59,45 +60,7 @@ const MAX_TOKENS_PER_REPLY = 1024;
 const DAILY_TOKEN_BUDGET = 200_000; // ~$5-10/day at claude-opus-5 output rates
 const MAX_CONVERSATIONS_PER_VISITOR_PER_DAY = 12;
 const MAX_TURNS_PER_CONVERSATION = 16;
-
-let budgetDay = "";
-let tokensSpentToday = 0;
-
-const conversationCounts = new Map<string, { day: string; count: number }>();
-
-function today(): string {
-	return new Date().toISOString().slice(0, 10);
-}
-
-function budgetRemaining(): boolean {
-	const d = today();
-	if (d !== budgetDay) {
-		budgetDay = d;
-		tokensSpentToday = 0;
-	}
-	return tokensSpentToday < DAILY_TOKEN_BUDGET;
-}
-
-function spend(tokens: number) {
-	tokensSpentToday += tokens;
-}
-
-function rateLimited(ip: string): boolean {
-	const d = today();
-	const entry = conversationCounts.get(ip);
-	if (!entry || entry.day !== d) {
-		conversationCounts.set(ip, { day: d, count: 1 });
-		return false;
-	}
-	entry.count += 1;
-	return entry.count > MAX_CONVERSATIONS_PER_VISITOR_PER_DAY;
-}
-
-function clientIp(request: Request, fallback: string): string {
-	const xff = request.headers.get("x-forwarded-for");
-	if (xff) return (xff.split(",")[0] ?? fallback).trim();
-	return fallback;
-}
+const BUDGET_POOL = "guide-tokens";
 
 interface Turn {
 	role: "user" | "assistant";
@@ -137,13 +100,13 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 	}
 
 	const ip = clientIp(request, clientAddress ?? "unknown");
-	if (rateLimited(ip)) {
+	if (rateLimited(ip, MAX_CONVERSATIONS_PER_VISITOR_PER_DAY)) {
 		return new Response(
 			JSON.stringify({ error: "That's a lot of conversation for one day — come back tomorrow, or use /act directly." }),
 			{ status: 429, headers: { "Content-Type": "application/json" } },
 		);
 	}
-	if (!budgetRemaining()) {
+	if (!budgetRemaining(BUDGET_POOL, DAILY_TOKEN_BUDGET)) {
 		return new Response(
 			JSON.stringify({ error: "The guide has done a lot of talking today. Try again tomorrow, or start with /act." }),
 			{ status: 503, headers: { "Content-Type": "application/json" } },
@@ -197,7 +160,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 				});
 
 				const final = await anthropicStream.finalMessage();
-				spend((final.usage?.output_tokens ?? 0) + (final.usage?.input_tokens ?? 0));
+				spend(BUDGET_POOL, (final.usage?.output_tokens ?? 0) + (final.usage?.input_tokens ?? 0));
 				send("done", { stopReason: final.stop_reason });
 			} catch (err) {
 				console.error("guide: anthropic call failed", err);
