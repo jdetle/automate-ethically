@@ -1,0 +1,61 @@
+/* Print stylesheet for the toolkit's printable pages (the one-pager, the
+ * council script). Bundled globally but entirely gated behind @media print,
+ * so it has zero effect on screen. Forces the light palette regardless of
+ * prefers-color-scheme — a broadside pinned to a corkboard is ink on paper,
+ * not a dark-mode screenshot, and a black-ink printer must render it cleanly.
+ */
+
+@media print {
+	:root {
+		--ae-paper: #ffffff;
+		--ae-paper-2: #ffffff;
+		--ae-ink: #000000;
+		--ae-muted: #333333;
+		--ae-line: #999999;
+		--ae-line-soft: #cccccc;
+		--ae-line-strong: #000000;
+		--ae-card: transparent;
+		--ae-indigo: #000000;
+		--ae-indigo-ink: #000000;
+		--ae-madder: #000000;
+		--ae-madder-wash: transparent;
+		--ae-gold: #000000;
+		--ae-gold-wash: transparent;
+	}
+
+	@page {
+		margin: 0.75in;
+	}
+
+	.ae-weave,
+	.ae-header,
+	.ae-footer,
+	.ae-skip,
+	.ae-note,
+	.ae-cta-row,
+	.ae-btn {
+		display: none;
+	}
+
+	body {
+		background: #ffffff;
+	}
+
+	a {
+		color: #000000;
+		text-decoration: underline;
+	}
+
+	/* Print the URL after external links so a paper copy is still useful. */
+	.ae-prose a[href^="http"]::after,
+	.ae-printable a[href^="http"]::after {
+		content: " (" attr(href) ")";
+		font-size: 0.85em;
+		color: #333333;
+	}
+
+	.ae-printable section,
+	.ae-printable .ae-card {
+		break-inside: avoid;
+	}
+}

@@ -1,27 +1,14 @@
 ---
-import Base from "../layouts/Base.astro";
+import Page from "../layouts/Page.astro";
 import Stitch from "../components/Stitch.astro";
 import PillarCard from "../components/PillarCard.astro";
 import ProjectCard from "../components/ProjectCard.astro";
 ---
 
-<Base
+<Page
 	title="Automate Ethically"
 	description="A movement for automation with a human in the loop: laws that keep a person accountable for every automated decision, software built on that principle, and help retraining for durable work."
 >
-	<header class="ae-header">
-		<a class="ae-wordmark" href="/">
-			<span class="ae-wordmark-pill">automate&nbsp;ethically</span>
-		</a>
-		<nav class="ae-nav" aria-label="Sections">
-			<a href="#organize">Organize</a>
-			<a href="#build">Build</a>
-			<a href="#retrain">Retrain</a>
-			<a href="#get-involved">Get involved</a>
-		</nav>
-	</header>
-
-	<main id="main">
 		<!-- DRAFT: rewrite — copy task 1: hero headline + subhead -->
 		<section class="ae-hero" aria-labelledby="hero-title">
 			<p class="ae-eyebrow">A movement for ethical automation</p>
@@ -44,7 +31,7 @@ import ProjectCard from "../components/ProjectCard.astro";
 				<figcaption>jacquard, 1804 — and the rule we intend to keep</figcaption>
 			</figure>
 			<div class="ae-cta-row">
-				<a class="ae-btn ae-btn--primary" href="#get-involved">Get involved</a>
+				<a class="ae-btn ae-btn--primary" href="/act">Take action</a>
 				<a class="ae-btn ae-btn--ghost" href="#manifesto">Read the manifesto</a>
 			</div>
 		</section>
@@ -136,7 +123,7 @@ import ProjectCard from "../components/ProjectCard.astro";
 
 		<Stitch />
 
-		<section class="ae-section ae-section--tint" aria-labelledby="pillars-title">
+		<section class="ae-section ae-section--tint" id="pillars" aria-labelledby="pillars-title">
 			<div class="ae-container">
 				<p class="ae-eyebrow">The work</p>
 				<h2 class="ae-h2" id="pillars-title">Three pillars, one principle</h2>
@@ -149,6 +136,7 @@ import ProjectCard from "../components/ProjectCard.astro";
 							<strong>an automation may act, but a person decides — and that
 							person is accountable.</strong> Then carry it to the state house.
 						</p>
+						<p><a href="/act">See how to get started &rarr;</a></p>
 					</PillarCard>
 					<!-- DRAFT: rewrite — copy task 4: pillar Build ethically -->
 					<PillarCard title="Build ethically" chip="software below" id="build">
@@ -226,22 +214,23 @@ import ProjectCard from "../components/ProjectCard.astro";
 			</div>
 		</section>
 
-		<!-- DRAFT: rewrite — copy task 9: get-involved CTA -->
+		<!-- DRAFT: rewrite — copy task 23: index action band replacing get-involved -->
 		<section class="ae-section" id="get-involved" aria-labelledby="cta-title">
 			<div class="ae-container">
 				<p class="ae-eyebrow">Get involved</p>
 				<h2 class="ae-h2" id="cta-title">Your town writes rules this year. Be in the room.</h2>
 				<p class="ae-plain">
-					It starts with one email: your city, and what you can do. An hour a
-					month is enough — most ordinances pass in rooms with ten people in
+					Pick the rung you can reach today — thirty seconds or an hour, every
+					bit of it counts. Most ordinances pass in rooms with ten people in
 					them.
 				</p>
 				<div class="ae-cta-row">
-					<a
-						class="ae-btn ae-btn--primary"
-						href="mailto:join@automate-ethically.com?subject=Count%20me%20in"
-					>join@automate-ethically.com</a>
+					<a class="ae-btn ae-btn--primary" href="/act#join">Join the list</a>
+					<a class="ae-btn ae-btn--ghost" href="/act#petition">Sign the petition</a>
 				</div>
+				<p class="ae-aside">
+					<a href="/act">See every way to help &rarr;</a>
+				</p>
 			</div>
 		</section>
 
@@ -252,13 +241,4 @@ import ProjectCard from "../components/ProjectCard.astro";
 				last.&rdquo;
 			</p>
 		</div>
-	</main>
-
-	<footer class="ae-footer">
-		<!-- DRAFT: rewrite — copy task 10: footer -->
-		<div class="ae-footer-inner">
-			<span>&copy; 2026 John Detlefs &middot; <a href="https://jdetle.com">jdetle.com</a></span>
-			<span class="ae-footer-sign">&hellip;and signed the bolt.</span>
-		</div>
-	</footer>
-</Base>
+</Page>

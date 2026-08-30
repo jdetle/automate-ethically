@@ -1,0 +1,161 @@
+---
+import Page from "../layouts/Page.astro";
+import Stitch from "../components/Stitch.astro";
+
+// TODO(Action Network): every rung below uses a mailto: fallback because the
+// organization's Action Network account doesn't exist yet. Once it does
+// (signup form, petition, state-legislator letter campaign — see README's
+// Action Network compliance checklist), swap the marked hrefs for the
+// AN-hosted pages with a ?source=<rung> code, and enable the AN widget
+// embed here per the plan. Until then, every link on this page must still
+// work — a mailto: link that opens the visitor's own email app does.
+const email = "join@automate-ethically.com";
+---
+
+<Page
+	title="Take action — Automate Ethically"
+	description="Pick the step you can reach today — thirty seconds or an hour, every bit of it counts."
+	ogImage="/og/act.png"
+>
+	<section class="ae-hero" aria-labelledby="act-title">
+		<p class="ae-eyebrow">Take action</p>
+		<!-- DRAFT: rewrite — copy task 12: /act framing -->
+		<h1 id="act-title">Pick the step you can reach today.</h1>
+		<p class="ae-hero-sub">
+			Rules change when neighbors organize. You don't have to do all six of
+			these — even one moves the needle, and none of them cost money or ask
+			you to be an expert.
+		</p>
+	</section>
+
+	<Stitch />
+
+	<section class="ae-section" aria-label="Ways to help">
+		<div class="ae-container">
+			<p class="ae-note">
+				New here? Start with rung 1 — it takes thirty seconds, and you can
+				always come back for the rest.
+			</p>
+			<ol class="ae-ladder">
+				<li class="ae-rung" id="join">
+					<span class="ae-rung-time">30 seconds</span>
+					<h2 class="ae-h2">1. Join the list</h2>
+					<!-- DRAFT: rewrite — copy task 13: rung one-liners -->
+					<p class="ae-prose">
+						We'll email you when there's something happening in your state —
+						nothing more often than that, and never anything asking for money.
+					</p>
+					<div class="ae-cta-row">
+						<a
+							class="ae-btn ae-btn--primary"
+							href={`mailto:${email}?subject=${encodeURIComponent("Add me to the list")}&body=${encodeURIComponent("My city/town: \nMy state: \n")}`}
+						>Join by email</a>
+					</div>
+				</li>
+
+				<li class="ae-rung" id="petition">
+					<span class="ae-rung-time">2 minutes</span>
+					<h2 class="ae-h2">2. Sign the petition</h2>
+					<!-- DRAFT: rewrite — copy task 14: petition text -->
+					<p class="ae-prose">
+						"One rule: a human makes the decision, and answers for it."
+						Signatures get shown to city councils as proof that people in
+						their town care about this — not sent to any candidate or party.
+					</p>
+					<div class="ae-cta-row">
+						<a
+							class="ae-btn ae-btn--primary"
+							href={`mailto:${email}?subject=${encodeURIComponent("Count me in on the petition")}&body=${encodeURIComponent("Name: \nCity/town: \nI support the rule: a human makes the decision, and answers for it.\n")}`}
+						>Sign by email</a>
+					</div>
+				</li>
+
+				<li class="ae-rung" id="share">
+					<span class="ae-rung-time">5 minutes</span>
+					<h2 class="ae-h2">3. Share it</h2>
+					<p class="ae-prose">
+						A broadside was made to be nailed up. Print
+						<a href="/toolkit/one-pager">the one-pager</a> and pin it somewhere
+						people will actually read it — a corkboard, a laundromat, a
+						library. Or just send this page to one neighbor.
+					</p>
+					<div class="ae-cta-row">
+						<a
+							class="ae-btn ae-btn--ghost"
+							href={`mailto:?subject=${encodeURIComponent("Thought you'd want to see this")}&body=${encodeURIComponent("https://automate-ethically.com")}`}
+						>Email one neighbor</a>
+						<a class="ae-btn ae-btn--ghost" href="/toolkit/one-pager">Print it</a>
+					</div>
+				</li>
+
+				<li class="ae-rung" id="write">
+					<span class="ae-rung-time">10 to 20 minutes</span>
+					<h2 class="ae-h2">4. Write to your officials</h2>
+					<p class="ae-prose">
+						This one's really two smaller tasks, honestly costed:
+					</p>
+					<h3 class="ae-rung-sub">Your state representative — about 10 minutes</h3>
+					<p class="ae-prose">
+						They're easy to reach: look up their contact page, then copy the
+						note below (in your own words is even better) and paste it in.
+					</p>
+					<!-- DRAFT: rewrite — copy task 15b: this template still reads like a
+					     policy memo, not a neighbor's letter. Kai's open dissent
+					     (docs/adversarial-review/reviews/2026-08-29-action-ladder-accessibility.md):
+					     match the plain, first-person register the rest of the toolkit uses. -->
+					<blockquote class="ae-epigraph">
+						<p>
+							I'm a neighbor in [your town]. I'm asking you to support a rule:
+							when an automated system — a camera network, an algorithm — makes
+							a decision that affects someone's life, a named person has to
+							review it and be accountable for it. Montana already passed this
+							for state agencies (HB 178). I'd like to see it here too. Thank
+							you for reading this.
+						</p>
+					</blockquote>
+					<h3 class="ae-rung-sub">Your city council — 15 to 20 minutes, longer the first time</h3>
+					<p class="ae-prose">
+						We can't look up your city council for you — you know your town
+						better than we do. This part takes longer because you'll need to
+						find their contact info yourself.
+					</p>
+					<div class="ae-cta-row">
+						<a class="ae-btn ae-btn--ghost" href="/toolkit/find-your-council">Find your council</a>
+					</div>
+				</li>
+
+				<li class="ae-rung" id="speak">
+					<span class="ae-rung-time">1 hour</span>
+					<h2 class="ae-h2">5. Show up and speak</h2>
+					<p class="ae-prose">
+						This is the one that actually moves an ordinance. Most council
+						meetings pass with almost nobody in the room — a handful of
+						neighbors speaking on the same issue stands out.
+					</p>
+					<div class="ae-cta-row">
+						<a class="ae-btn ae-btn--primary" href="/toolkit/council-script">Get the 2-minute script</a>
+						<a class="ae-btn ae-btn--ghost" href="/toolkit/find-your-council">Find your meeting</a>
+					</div>
+				</li>
+
+				<li class="ae-rung" id="lead">
+					<span class="ae-rung-time">ongoing</span>
+					<h2 class="ae-h2">6. Become a local lead</h2>
+					<p class="ae-prose">
+						<span class="ae-project-human">
+							If you're willing to be the person your town calls on this — to
+							host a meeting, track the council's agenda, or just be a
+							point of contact — tell us what's happening where you live.
+						</span>
+					</p>
+					<div class="ae-cta-row">
+						<a
+							class="ae-btn ae-btn--primary"
+							href={`mailto:${email}?subject=${encodeURIComponent("I want to help organize locally")}&body=${encodeURIComponent("My city/town: \nWhat's happening there: \nWhat I can help with (host a meeting / track the agenda / speak / something else): \n")}`}
+						>Tell us about your town</a>
+					</div>
+				</li>
+			</ol>
+		</div>
+	</section>
+</Page>

@@ -1,0 +1,24 @@
+---
+// Shared header for every route. Anchor links use full paths ("/#clock") so
+// they work correctly from pages other than the home page.
+const path = Astro.url.pathname;
+const isToolkit = path.startsWith("/toolkit");
+const isAct = path.startsWith("/act");
+---
+
+<header class="ae-header">
+	<a class="ae-wordmark" href="/">
+		<span class="ae-wordmark-pill">automate&nbsp;ethically</span>
+	</a>
+	<nav class="ae-nav" aria-label="Sections">
+		<a href="/#clock">Why now</a>
+		<a href="/#pillars">The work</a>
+		<a href="/toolkit" aria-current={isToolkit ? "page" : undefined}>Toolkit</a>
+		<a href="/search" aria-current={path === "/search" ? "page" : undefined}>Search</a>
+		<a
+			class="ae-nav-act"
+			href="/act"
+			aria-current={isAct ? "page" : undefined}
+		>Act</a>
+	</nav>
+</header>

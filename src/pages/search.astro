@@ -1,0 +1,59 @@
+---
+import Page from "../layouts/Page.astro";
+import Stitch from "../components/Stitch.astro";
+---
+
+<Page
+	title="Search — Automate Ethically"
+	description="Search this site — the manifesto, the toolkit, everything."
+>
+	<section class="ae-hero" aria-labelledby="search-title">
+		<p class="ae-eyebrow">Search</p>
+		<h1 id="search-title">Find anything on this site.</h1>
+		<p class="ae-hero-sub">Type a word or two — a topic, a page name, anything you remember.</p>
+	</section>
+
+	<Stitch />
+
+	<section class="ae-section" aria-label="Search results">
+		<div class="ae-container ae-search-container">
+			<div id="search"></div>
+			<noscript>
+				<p class="ae-prose">
+					Search needs JavaScript to work. Without it, you can still browse
+					everything from the <a href="/">home page</a> or the
+					<a href="/toolkit">toolkit</a>.
+				</p>
+			</noscript>
+		</div>
+	</section>
+
+	<!--
+		Pagefind is built and hosted entirely by us — its index and UI script
+		are generated at build time (`pagefind --site dist`) and served from
+		our own domain, not fetched from a third party. It's the one place on
+		the site with a real JS dependency besides the pageview beacon and the
+		(future) Action Network embed on /act, and it's scoped to this page
+		only.
+	-->
+	<link rel="stylesheet" href="/pagefind/pagefind-ui.css" />
+	<script is:inline src="/pagefind/pagefind-ui.js"></script>
+	<script is:inline>
+		window.addEventListener("DOMContentLoaded", () => {
+			if (typeof PagefindUI === "undefined") return;
+			new PagefindUI({ element: "#search", showSubResults: true });
+		});
+	</script>
+</Page>
+
+<style>
+	.ae-search-container {
+		--pagefind-ui-primary: var(--ae-indigo);
+		--pagefind-ui-text: var(--ae-ink);
+		--pagefind-ui-background: var(--ae-paper);
+		--pagefind-ui-border: var(--ae-line);
+		--pagefind-ui-tag: var(--ae-paper-2);
+		--pagefind-ui-font: var(--ae-sans);
+		--pagefind-ui-border-radius: 8px;
+	}
+</style>

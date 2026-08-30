@@ -1,0 +1,21 @@
+---
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import Base from "./Base.astro";
+
+interface Props {
+	title: string;
+	description: string;
+	ogImage?: string;
+}
+
+const { title, description, ogImage } = Astro.props;
+---
+
+<Base title={title} description={description} ogImage={ogImage}>
+	<Header />
+	<main id="main" data-pagefind-body>
+		<slot />
+	</main>
+	<Footer />
+</Base>

@@ -2,14 +2,23 @@
 import "@fontsource-variable/source-serif-4";
 import "../styles/tokens.css";
 import "../styles/site.css";
+import "../styles/print.css";
 
 interface Props {
 	title: string;
 	description: string;
+	/** Relative to site root, e.g. "/og/act.png". Defaults to the site card. */
+	ogImage?: string;
 }
 
-const { title, description } = Astro.props;
+const { title, description, ogImage = "/og/default.png" } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
+const ogImageUrl = new URL(ogImage, Astro.site);
+
+// Baked in at build time from a repo secret once the s10 tenant is
+// registered (see README). Empty until then — the beacon just no-ops rather
+// than firing unauthenticated requests at production.
+const s10IngestKey = import.meta.env.PUBLIC_S10_INGEST_KEY ?? "";
 ---
 
 <!doctype html>
@@ -22,9 +31,14 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
 		<link rel="canonical" href={canonical} />
 		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="Automate Ethically" />
 		<meta property="og:title" content={title} />
 		<meta property="og:description" content={description} />
 		<meta property="og:url" content={canonical} />
+		<meta property="og:image" content={ogImageUrl} />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta name="twitter:card" content="summary_large_image" />
 		<meta name="theme-color" content="#f3efe6" media="(prefers-color-scheme: light)" />
 		<meta name="theme-color" content="#131c2b" media="(prefers-color-scheme: dark)" />
 	</head>
@@ -32,5 +46,35 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
 		<a class="ae-skip" href="#main">Skip to content</a>
 		<div class="ae-weave" aria-hidden="true"></div>
 		<slot />
+		<script define:vars={{ s10IngestKey }}>
+			// Pageview beacon only — no persistent identifier, no DOM capture, no
+			// third-party origin. Posts to our own /telemetry/ proxy, which nginx
+			// forwards to our own s10 tenant. See README's Analytics section.
+			// No-ops entirely until an ingest key is baked in at build time.
+			(() => {
+				if (!s10IngestKey) return;
+				try {
+					const envelope = {
+						kind: "pageview",
+						tenant: "automate-ethically",
+						path: location.pathname,
+						referrer: document.referrer || null,
+						screen_bucket:
+							innerWidth < 480 ? "mobile" : innerWidth < 1024 ? "tablet" : "desktop",
+					};
+					fetch("/telemetry/v2/envelopes", {
+						method: "POST",
+						headers: {
+							"Content-Type": "application/x-ndjson",
+							Authorization: `Bearer ${s10IngestKey}`,
+						},
+						body: `${JSON.stringify(envelope)}\n`,
+						keepalive: true,
+					}).catch(() => {});
+				} catch {
+					// analytics must never break the page
+				}
+			})();
+		</script>
 	</body>
 </html>
