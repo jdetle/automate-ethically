@@ -148,6 +148,9 @@ p {
 .ae-nav a {
 	text-decoration: none;
 	color: var(--ae-muted);
+	/* Finger-sized tap targets without disturbing the text grid. */
+	padding: 12px 4px;
+	margin: -12px -4px;
 }
 
 .ae-nav a:hover {
