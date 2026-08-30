@@ -14,6 +14,7 @@
 // on these routes to replay): 0% trace sampling and no default PII unless
 // explicitly turned up via env vars.
 import * as Sentry from "@sentry/node";
+import { readSecret } from "./env";
 
 let initialized = false;
 
@@ -25,13 +26,13 @@ export function initSentry(): void {
 	// why: a non-PUBLIC_ import.meta.env.X read gets statically inlined at
 	// build time in this adapter's server bundle, so a DSN set only at
 	// container runtime would never be seen.
-	const dsn = process.env.SENTRY_DSN;
+	const dsn = readSecret("SENTRY_DSN");
 	if (!dsn) return;
 
 	Sentry.init({
 		dsn,
-		environment: process.env.SENTRY_ENVIRONMENT ?? "production",
-		tracesSampleRate: Number(process.env.SENTRY_TRACES_SAMPLE_RATE ?? "0"),
+		environment: readSecret("SENTRY_ENVIRONMENT") || "production",
+		tracesSampleRate: Number(readSecret("SENTRY_TRACES_SAMPLE_RATE") || "0"),
 		sendDefaultPii: false,
 	});
 

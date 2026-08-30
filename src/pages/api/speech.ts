@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { budgetRemaining, clientIp, spend, verifyTurnstile } from "../../lib/api-limits";
+import { readSecret } from "../../lib/env";
 import { verifySessionToken } from "../../lib/guide-session";
 import { initSentry, Sentry } from "../../lib/sentry";
 
@@ -34,7 +35,7 @@ export const GET: APIRoute = async () => {
 	// Turnstile check for why: import.meta.env.X for a non-PUBLIC_ var gets
 	// statically inlined at build time in this adapter's server bundle, so it
 	// would never see a value set only at container runtime.
-	const configured = Boolean(process.env.OPENAI_API_KEY);
+	const configured = Boolean(readSecret("OPENAI_API_KEY"));
 	return new Response(JSON.stringify({ configured }), {
 		headers: { "Content-Type": "application/json" },
 	});
@@ -57,7 +58,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 	// rather than trusting that — a caller that skips /api/guide entirely
 	// must still clear this bar before OpenAI gets a request.
 	const ip = clientIp(request, clientAddress ?? "unknown");
-	const turnstileSecret = process.env.TURNSTILE_SECRET_KEY;
+	const turnstileSecret = readSecret("TURNSTILE_SECRET_KEY");
 	if (!turnstileSecret) {
 		return new Response(JSON.stringify({ error: "not configured" }), {
 			status: 503,
@@ -77,7 +78,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 		});
 	}
 
-	const apiKey = process.env.OPENAI_API_KEY;
+	const apiKey = readSecret("OPENAI_API_KEY");
 	if (!apiKey) {
 		return new Response(JSON.stringify({ error: "not configured" }), {
 			status: 503,
