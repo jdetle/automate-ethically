@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { clientIp, verifyTurnstile } from "../../lib/api-limits";
+import { readSecret } from "../../lib/env";
 import { createSessionToken } from "../../lib/guide-session";
 import { initSentry } from "../../lib/sentry";
 
@@ -19,7 +20,7 @@ initSentry();
  * means no session, which means neither paid route will run.
  */
 export const POST: APIRoute = async ({ request, clientAddress }) => {
-	const secret = process.env.TURNSTILE_SECRET_KEY;
+	const secret = readSecret("TURNSTILE_SECRET_KEY");
 	if (!secret) {
 		return new Response(JSON.stringify({ error: "Human verification isn't configured yet." }), {
 			status: 503,

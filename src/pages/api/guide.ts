@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import Anthropic from "@anthropic-ai/sdk";
 import { budgetRemaining, clientIp, rateLimited, spend, verifyTurnstile } from "../../lib/api-limits";
+import { readSecret } from "../../lib/env";
 import { verifySessionToken } from "../../lib/guide-session";
 import {
 	detectOutputViolation,
@@ -106,7 +107,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 	// seen — the build would bake in "undefined" and Rollup would dead-code
 	// eliminate everything past this check. process.env is read live by Node
 	// on every request.
-	const turnstileSecret = process.env.TURNSTILE_SECRET_KEY;
+	const turnstileSecret = readSecret("TURNSTILE_SECRET_KEY");
 	if (!turnstileSecret) {
 		return new Response(
 			JSON.stringify({ error: "Human verification isn't configured yet." }),
@@ -128,7 +129,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 		});
 	}
 
-	const apiKey = process.env.ANTHROPIC_API_KEY;
+	const apiKey = readSecret("ANTHROPIC_API_KEY");
 	if (!apiKey) {
 		return new Response(
 			JSON.stringify({ error: "The guide isn't configured yet." }),
@@ -258,8 +259,23 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 				}
 			} catch (err) {
 				console.error("guide: anthropic call failed", err);
-				Sentry.captureException(err);
-				send("error", { message: "Something went wrong on our end — try again in a moment." });
+				// A 401/403 from Anthropic is a credential problem, not a blip:
+				// it fails identically on every retry until someone fixes the
+				// key. Telling a visitor to "try again in a moment" is simply
+				// false, and burying it under the generic message is exactly
+				// what let a corrupted key sit in production looking like
+				// intermittent flakiness. Name it, and flag it fatal in Sentry.
+				const status = (err as { status?: number } | null)?.status;
+				if (status === 401 || status === 403) {
+					Sentry.captureException(err, { level: "fatal", tags: { misconfigured: "ANTHROPIC_API_KEY" } });
+					send("error", {
+						message:
+							"The guide's API key is being rejected — that's broken on our end, and retrying won't help. Try /act in the meantime.",
+					});
+				} else {
+					Sentry.captureException(err);
+					send("error", { message: "Something went wrong on our end — try again in a moment." });
+				}
 			} finally {
 				controller.close();
 			}

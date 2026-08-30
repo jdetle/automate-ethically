@@ -266,6 +266,32 @@ managed certificates (`mc-ae-apex-v3`, `mc-cae-platform-www-automate-eth-5125`)
 as of 2026-08-30 — `astro.config.mjs`'s canonical `site` correctly matches
 the live apex.
 
+### Handling secrets: rules learned the hard way
+
+A corrupted `ANTHROPIC_API_KEY` reached production and broke the guide for
+real visitors. The key had been copied out of a `.env` file whose values are
+quoted (`KEY="sk-ant-…"`) with a shell one-liner that split on `=` and kept
+everything after it — including the quote characters. Every safeguard passed,
+because every safeguard only asked *"is this variable set?"*, and it was set,
+just wrong. Rules that follow from it:
+
+1. **Presence is not health.** Never treat a non-empty env var as a working
+   credential. The only proof a key works is spending it against the real API
+   — that is what `scripts/smoke-prod.sh` does, and it must be run after every
+   production deploy.
+2. **Normalise secrets where they enter the process.** All secret reads go
+   through [`readSecret()`](src/lib/env.ts), which strips whitespace and one
+   matching pair of surrounding quotes. Quoting, stray newlines, and trailing
+   whitespace are the normal failure modes of moving a secret by hand between
+   a file, a terminal, a CI store, and a container; none are recoverable at
+   request time and all are trivial to neutralise once.
+3. **Never move a secret with `cut -d '=' -f2-`.** It keeps quotes. Strip
+   them, or read the file with a parser that understands the format.
+4. **A credential failure must never render as "try again in a moment."**
+   A 401/403 from an upstream API fails identically forever; saying otherwise
+   is false, and it disguises a broken deploy as intermittent flakiness. These
+   surface a distinct message and are tagged fatal in Sentry.
+
 Repository secrets required for deploy (`gh secret set <name>` or the repo's
 Settings → Secrets UI — always piped directly from wherever the value lives,
 never typed in by hand):
