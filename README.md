@@ -88,6 +88,17 @@ other page is still plain prerendered HTML; see the adapter note in
 - **Location is asked in conversation, never stored** — consistent with the
   rest of the site's no-persistent-data stance (see the footer's privacy
   line). Each conversation's history lives only in the browser tab.
+- **Suggested prompts, seeded from a disclosed, throwaway location guess.**
+  `src/pages/api/geo.ts` resolves the visitor's IP from forwarded headers and
+  makes one lookup against [ipapi.co](https://ipapi.co) (free, keyless — the
+  same technique jdetle.com's `/who-are-you`/`/api/edge-detect` already use,
+  scoped down to just city/region/country) to fill in five clickable
+  starter prompts ("What's organizing around Denver, CO right now?"). The
+  guess is never presented as fact — it's labeled "Guessing you're near..."
+  with a one-click "change it," never logged, never stored (a short in-memory
+  TTL cache exists only to avoid hammering ipapi.co's free tier on a reload,
+  and holds nothing on disk). Private/local IPs and lookup failures fall back
+  to generic "your area" phrasing rather than blocking anything.
 - **Streamed** (Server-Sent Events) so replies appear as they're generated.
 - **Voice, opt-in and real:** `src/pages/api/speech.ts` proxies OpenAI TTS
   (`tts-1`, 24kHz mono PCM), streamed the same way jacquard's Cedar does —

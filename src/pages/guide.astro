@@ -46,6 +46,24 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 				</div>
 			</div>
 
+			<div class="ae-guide-suggestions" id="guide-suggestions" hidden>
+				<p class="ae-guide-location" id="guide-location-line">
+					<span id="guide-location-text"></span>
+					<button type="button" class="ae-guide-location-edit" id="guide-location-edit">change it</button>
+				</p>
+				<div class="ae-guide-location-form" id="guide-location-form" hidden>
+					<input
+						type="text"
+						id="guide-location-input"
+						class="ae-guide-location-input"
+						placeholder="Your city, or your state"
+						aria-label="Your location"
+					/>
+					<button type="button" class="ae-btn" id="guide-location-save">Use this</button>
+				</div>
+				<div class="ae-guide-chips" id="guide-chips" role="list" aria-label="Suggested things to ask"></div>
+			</div>
+
 			<div class="ae-guide-transcript" id="guide-transcript"></div>
 
 			<form class="ae-guide-form" id="guide-form">
@@ -61,7 +79,9 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 				</button>
 			</form>
 			<p class="ae-aside">
-				Nothing you type here is saved after you close the tab — see
+				Nothing you type here is saved after you close the tab. The
+				suggestions above are a one-time guess from your IP address — never
+				stored, never sent anywhere else — see
 				<a href="/facts">how this site handles data</a>. Prefer not to talk
 				to a model at all? <a href="/act">Skip straight to the action list</a>.
 			</p>
@@ -153,6 +173,86 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 
 	const history: Turn[] = [];
 	let busy = false;
+
+	// ---- Suggested prompts, seeded from a disclosed, throwaway location
+	// guess (src/pages/api/geo.ts). Never a claim, always a guess the
+	// visitor can overrule in one click — see the "change it" button below.
+	const PROMPT_TEMPLATES = [
+		(place: string) => `What's organizing around ${place} right now?`,
+		(place: string) => `Is ${place}'s city council discussing AI, surveillance, or automated decisions?`,
+		(place: string) => `I live near ${place} — where should I start?`,
+		(place: string) => `Are there local groups near ${place} already working on this?`,
+		(place: string) => `What does the state-level landscape look like for ${place}?`,
+	];
+
+	const suggestions = document.querySelector<HTMLDivElement>("#guide-suggestions");
+	const locationLine = document.querySelector<HTMLParagraphElement>("#guide-location-line");
+	const locationText = document.querySelector<HTMLSpanElement>("#guide-location-text");
+	const locationEditBtn = document.querySelector<HTMLButtonElement>("#guide-location-edit");
+	const locationForm = document.querySelector<HTMLDivElement>("#guide-location-form");
+	const locationInput = document.querySelector<HTMLInputElement>("#guide-location-input");
+	const locationSaveBtn = document.querySelector<HTMLButtonElement>("#guide-location-save");
+	const chipsEl = document.querySelector<HTMLDivElement>("#guide-chips");
+
+	function renderChips(place: string | null) {
+		if (!chipsEl) return;
+		const label = place ?? "your area";
+		chipsEl.innerHTML = "";
+		for (const template of PROMPT_TEMPLATES) {
+			const chip = document.createElement("button");
+			chip.type = "button";
+			chip.className = "ae-guide-chip";
+			chip.setAttribute("role", "listitem");
+			chip.textContent = template(label);
+			chip.addEventListener("click", () => {
+				if (input) {
+					input.value = chip.textContent ?? "";
+					input.focus();
+				}
+			});
+			chipsEl.appendChild(chip);
+		}
+		// Always show the line — a failed/empty guess still needs a way to
+		// set a location by hand, it just shouldn't claim a guess it doesn't
+		// have.
+		if (locationLine) locationLine.hidden = false;
+		if (locationText) {
+			locationText.textContent = place ? `Guessing you're near ${place}.` : "";
+		}
+		if (locationEditBtn) locationEditBtn.textContent = place ? "change it" : "Add your location for better suggestions";
+		if (suggestions) suggestions.hidden = false;
+	}
+
+	function showLocationEditor(show: boolean) {
+		if (locationForm) locationForm.hidden = !show;
+		if (locationLine) locationLine.hidden = show;
+		if (show) locationInput?.focus();
+	}
+
+	locationEditBtn?.addEventListener("click", () => showLocationEditor(true));
+	locationSaveBtn?.addEventListener("click", () => {
+		const typed = locationInput?.value.trim();
+		showLocationEditor(false);
+		if (typed) renderChips(typed);
+	});
+	locationInput?.addEventListener("keydown", (e) => {
+		if (e.key === "Enter") {
+			e.preventDefault();
+			locationSaveBtn?.click();
+		}
+	});
+
+	// One lookup per page load. IP-derived, disclosed, never stored server
+	// side either (see api/geo.ts) — if it fails or comes back empty, the
+	// chips just fall back to generic "your area" phrasing rather than
+	// blocking anything.
+	void fetch("/api/geo")
+		.then((r) => (r.ok ? r.json() : {}))
+		.then((geo: { city?: string; region?: string }) => {
+			const place = [geo.city, geo.region].filter(Boolean).join(", ") || null;
+			renderChips(place);
+		})
+		.catch(() => renderChips(null));
 
 	// Silent until asked, same reasoning as jacquard: speech that starts on
 	// its own is startling, and the toggle only appears once we know a voice
@@ -377,6 +477,82 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 		border-color: var(--ae-madder);
 		color: var(--ae-madder);
 		background: var(--ae-madder-wash);
+	}
+
+	.ae-guide-suggestions {
+		margin-top: 26px;
+	}
+
+	.ae-guide-location {
+		font-size: 13px;
+		color: var(--ae-muted);
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	/* `display` set above wins the specificity fight against the `hidden`
+	 * attribute's UA-stylesheet default — without this, an element can be
+	 * both `hidden` and visibly flexed at the same time. */
+	.ae-guide-location[hidden],
+	.ae-guide-location-form[hidden] {
+		display: none;
+	}
+
+	.ae-guide-location-edit {
+		background: none;
+		border: none;
+		padding: 0;
+		color: var(--ae-indigo-ink);
+		font-size: 13px;
+		text-decoration: underline;
+		text-underline-offset: 3px;
+		cursor: pointer;
+	}
+
+	.ae-guide-location-form {
+		display: flex;
+		gap: 8px;
+		margin-bottom: 4px;
+	}
+
+	.ae-guide-location-input {
+		flex: 1;
+		max-width: 260px;
+		padding: 6px 12px;
+		border-radius: 999px;
+		border: 1px solid var(--ae-line-strong);
+		background: var(--ae-paper);
+		color: var(--ae-ink);
+		font-family: var(--ae-sans);
+		font-size: 14px;
+	}
+
+	.ae-guide-chips {
+		margin-top: 10px;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+
+	.ae-guide-chip {
+		padding: 8px 14px;
+		border-radius: 999px;
+		border: 1px solid var(--ae-line);
+		background: var(--ae-card);
+		color: var(--ae-ink);
+		font-family: var(--ae-sans);
+		font-size: 13px;
+		line-height: 1.4;
+		text-align: left;
+		cursor: pointer;
+		transition: transform 140ms var(--ae-ease), box-shadow 140ms var(--ae-ease);
+	}
+
+	.ae-guide-chip:hover {
+		border-color: var(--ae-indigo);
+		transform: translateY(-1px);
+		box-shadow: 0 6px 16px var(--ae-shadow);
 	}
 
 	.ae-guide-transcript {
