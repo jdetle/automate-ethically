@@ -87,12 +87,63 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 					Send
 				</button>
 			</form>
+			<details class="ae-guide-disclosure">
+				<summary>Exactly what this page sends, and to whom</summary>
+				<div class="ae-guide-disclosure-body">
+					<p>
+						A site arguing that automated decisions should be answerable
+						shouldn't ask you to take its own on faith. So, in full:
+					</p>
+					<h3>Leaves your browser</h3>
+					<ul>
+						<li>
+							<strong>What you type</strong>, plus the earlier turns of this
+							conversation, to this site's server, and from there to
+							<strong>Anthropic</strong> (the model is <code>claude-opus-5</code>).
+							Held in your tab's memory only — closing the tab ends it.
+						</li>
+						<li>
+							<strong>Your IP address</strong>, unavoidably, as with any web
+							request. Used for three things and no others: a one-time
+							city-level guess to seed the suggested questions above (via
+							<a href="https://ipapi.co" rel="noreferrer">ipapi.co</a>), rate
+							limiting, and the human check below. Never written to a database.
+						</li>
+						<li>
+							<strong>A human-verification check</strong> to
+							<strong>Cloudflare Turnstile</strong>, once per session — not
+							once per message. It exists so an automated script can't run up
+							a bill on a movement site.
+						</li>
+						<li>
+							<strong>The guide's replies</strong> go to <strong>OpenAI</strong>
+							for text-to-speech, but only while you have voice switched on.
+							Off by default.
+						</li>
+						<li>
+							<strong>Whatever the guide searches for.</strong> When it looks
+							something up, the search terms it chose reach a web-search
+							provider through Anthropic. Every reply that used a search shows
+							you the exact queries and the sites it read — expand
+							"what this answer is based on" under any reply.
+						</li>
+					</ul>
+					<h3>Does not happen</h3>
+					<ul>
+						<li>No cookies, no <code>localStorage</code> identifier, no persistent ID of any kind.</li>
+						<li>Your conversation is never stored on the server, never logged, and never used for training.</li>
+						<li>No advertising or analytics network sees any of this. Page-count analytics run on our own infrastructure and don't receive what you type.</li>
+						<li>Nothing you type is attached to your IP anywhere.</li>
+					</ul>
+					<p class="ae-guide-disclosure-foot">
+						The code is open: <a href="https://github.com/jdetle/automate-ethically/blob/main/src/pages/api/guide.ts" rel="noreferrer">the route that does all this</a>.
+						More on the site's data stance: <a href="/facts">how this site handles data</a>.
+					</p>
+				</div>
+			</details>
 			<p class="ae-aside">
-				Nothing you type here is saved after you close the tab. The
-				suggestions above are a one-time guess from your IP address — never
-				stored, never sent anywhere else — see
-				<a href="/facts">how this site handles data</a>. Prefer not to talk
-				to a model at all? <a href="/act">Skip straight to the action list</a>.
+				Prefer not to talk to a model at all?
+				<a href="/act">Skip straight to the action list</a>.
 			</p>
 		</div>
 	</section>
@@ -539,6 +590,108 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 		}
 	}
 
+	/**
+	 * An in-transcript working indicator. The orb says the same thing, but on
+	 * a phone the orb has usually scrolled off the top by the time a reply is
+	 * being composed — leaving a visitor staring at a blank bubble with no
+	 * sign anything is happening. This sits where they are actually looking.
+	 */
+	function setWorking(row: HTMLDivElement, label: string) {
+		let el = row.querySelector<HTMLParagraphElement>(".ae-guide-working");
+		if (!el) {
+			el = document.createElement("p");
+			el.className = "ae-guide-working";
+			el.setAttribute("role", "status");
+			const textEl = row.querySelector("p");
+			row.insertBefore(el, textEl?.nextSibling ?? null);
+		}
+		el.innerHTML = "";
+		el.appendChild(document.createTextNode(label));
+		const dots = document.createElement("span");
+		dots.className = "ae-guide-working-dots";
+		dots.setAttribute("aria-hidden", "true");
+		for (let i = 0; i < 3; i++) dots.appendChild(document.createElement("i"));
+		el.appendChild(dots);
+	}
+
+	function clearWorking(row: HTMLDivElement) {
+		row.querySelector(".ae-guide-working")?.remove();
+	}
+
+	interface TraceData {
+		searches?: { query: string; results: number; domains: string[] }[];
+		usage?: { inputTokens: number; outputTokens: number };
+	}
+
+	/**
+	 * Shows what the model actually did to produce this reply — the searches
+	 * it ran, verbatim, and the sites it read. The site's argument is that an
+	 * automated decision should be answerable; this is the guide holding
+	 * itself to that, per reply, rather than asking to be trusted.
+	 */
+	function renderTrace(row: HTMLDivElement, data: TraceData) {
+		const trace = row.querySelector<HTMLDetailsElement>(".ae-guide-trace");
+		if (!trace) return;
+		const searches = data.searches ?? [];
+		if (searches.length === 0) {
+			// No search ran: say so explicitly rather than showing nothing,
+			// because "answered from the model's own knowledge" is exactly the
+			// kind of thing a reader should be able to weigh.
+			trace.innerHTML = "";
+			const summary = document.createElement("summary");
+			summary.textContent = "No web search — answered from the model's own knowledge";
+			trace.appendChild(summary);
+			const note = document.createElement("p");
+			note.className = "ae-guide-trace-note";
+			note.textContent =
+				"Nothing here was looked up live, so treat anything specific — a group, a meeting, a date — as unverified.";
+			trace.appendChild(note);
+			trace.hidden = false;
+			return;
+		}
+
+		trace.innerHTML = "";
+		const summary = document.createElement("summary");
+		const totalSites = new Set(searches.flatMap((entry) => entry.domains)).size;
+		summary.textContent = `What this answer is based on — ${searches.length} search${searches.length === 1 ? "" : "es"}, ${totalSites} site${totalSites === 1 ? "" : "s"}`;
+		trace.appendChild(summary);
+
+		const list = document.createElement("ol");
+		list.className = "ae-guide-trace-list";
+		for (const entry of searches) {
+			const item = document.createElement("li");
+
+			const q = document.createElement("span");
+			q.className = "ae-guide-trace-query";
+			q.textContent = entry.query ? `searched: “${entry.query}”` : "searched the web";
+			item.appendChild(q);
+
+			const meta = document.createElement("span");
+			meta.className = "ae-guide-trace-meta";
+			meta.textContent =
+				entry.results === 0
+					? " — no results (that search failed or was cut off)"
+					: ` — ${entry.results} result${entry.results === 1 ? "" : "s"}`;
+			item.appendChild(meta);
+
+			if (entry.domains.length > 0) {
+				const sites = document.createElement("span");
+				sites.className = "ae-guide-trace-sites";
+				sites.textContent = entry.domains.join(" · ");
+				item.appendChild(sites);
+			}
+			list.appendChild(item);
+		}
+		trace.appendChild(list);
+
+		const note = document.createElement("p");
+		note.className = "ae-guide-trace-note";
+		note.textContent =
+			"These queries were sent to a web-search provider through Anthropic. Nothing about you was attached to them.";
+		trace.appendChild(note);
+		trace.hidden = false;
+	}
+
 	function addTurn(role: Turn["role"], text: string): { row: HTMLDivElement; textEl: HTMLParagraphElement } {
 		const row = document.createElement("div");
 		row.className = role === "user" ? "ae-guide-turn ae-guide-turn--you" : "ae-guide-turn";
@@ -547,6 +700,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 		label.className = "ae-guide-turn-label";
 		label.textContent = role === "user" ? "You" : "The guide";
 		row.appendChild(label);
+
 
 		const p = document.createElement("p");
 		renderReplyText(p, text);
@@ -564,6 +718,13 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 				hideSpeakingIndicator();
 			});
 			row.appendChild(speakingBtn);
+
+			// Filled in by the "trace" event once the reply completes. Empty
+			// (and hidden) for replies that never searched.
+			const trace = document.createElement("details");
+			trace.className = "ae-guide-trace";
+			trace.hidden = true;
+			row.appendChild(trace);
 		}
 
 		transcript?.appendChild(row);
@@ -594,6 +755,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 		if (status) status.textContent = "Thinking…";
 
 		const { row: replyRow, textEl: replyP } = addTurn("assistant", "");
+		setWorking(replyRow, "Thinking");
 		let replyText = "";
 
 		try {
@@ -656,17 +818,21 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 					const data = JSON.parse(dataLine.slice(6));
 
 					if (event === "phase" && data.phase === "researching") {
-						setOrbConversationState("thinking");
-						if (status) status.textContent = "Looking that up…";
+						setOrbConversationState("searching");
+						if (status) status.textContent = "Searching the web…";
+						setWorking(replyRow, "Searching the web");
 					} else if (event === "phase" && data.phase === "speaking") {
 						setOrbConversationState("speaking");
 						if (status) status.textContent = "…";
+						clearWorking(replyRow);
 					} else if (event === "text") {
 						replyText += data.text;
 						renderReplyText(replyP, replyText);
 						appendCursor(replyP);
 						pulseFromText(data.text);
 						if (transcript) transcript.scrollTop = transcript.scrollHeight;
+					} else if (event === "trace") {
+						renderTrace(replyRow, data as TraceData);
 					} else if (event === "error") {
 						// A guardrail can fire mid-stream (see api/guide.ts) after
 						// some safe text has already arrived — this replaces the
@@ -690,6 +856,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 		} catch {
 			replyP.textContent = "Couldn't reach the guide — check your connection and try again.";
 		} finally {
+			clearWorking(replyRow);
 			if (!currentSpeech) setOrbConversationState("idle");
 			if (status) status.textContent = "Ready when you are.";
 			busy = false;
@@ -842,26 +1009,192 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 		gap: 14px;
 	}
 
+	/* The two sides have to be tellable apart at a glance, on a phone, mid-
+	 * scroll. Four signals rather than one, because any single one fails
+	 * somewhere: side (which edge it hangs off), ground (wash vs paper),
+	 * an accent rule on the speaking edge, and the label itself. */
 	.ae-guide-turn {
+		position: relative;
 		padding: 12px 16px;
 		border-radius: 10px;
-		background: var(--ae-card);
+		max-width: 88%;
+		align-self: flex-start;
+		background: var(--ae-paper-2, var(--ae-card));
 		border: 1px solid var(--ae-line);
-		max-width: 85%;
+		border-left: 3px solid var(--ae-madder);
+		border-top-left-radius: 3px;
+	}
+
+	.ae-guide-turn--you {
+		align-self: flex-end;
+		background: var(--ae-indigo-wash);
+		border: 1px solid var(--ae-indigo);
+		border-left: 1px solid var(--ae-indigo);
+		border-right: 3px solid var(--ae-indigo);
+		border-top-left-radius: 10px;
+		border-top-right-radius: 3px;
 	}
 
 	.ae-guide-turn-label {
 		display: block;
 		font-size: 11px;
-		font-weight: 600;
+		font-weight: 700;
 		letter-spacing: var(--ae-tracking-chip);
 		text-transform: uppercase;
-		color: var(--ae-muted);
-		margin-bottom: 4px;
+		color: var(--ae-madder);
+		margin-bottom: 5px;
 	}
 
 	.ae-guide-turn--you .ae-guide-turn-label {
 		color: var(--ae-indigo-ink);
+		text-align: right;
+	}
+
+	@media (max-width: 620px) {
+		.ae-guide-turn {
+			max-width: 96%;
+		}
+	}
+
+	/* ---- working indicator ---- */
+	.ae-guide-working {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 14px;
+		color: var(--ae-muted);
+		font-style: italic;
+	}
+
+	.ae-guide-working-dots {
+		display: inline-flex;
+		gap: 3px;
+	}
+
+	.ae-guide-working-dots i {
+		width: 4px;
+		height: 4px;
+		border-radius: 50%;
+		background: var(--ae-madder);
+		animation: ae-guide-bounce 1.1s ease-in-out infinite;
+	}
+
+	.ae-guide-working-dots i:nth-child(2) {
+		animation-delay: 0.15s;
+	}
+
+	.ae-guide-working-dots i:nth-child(3) {
+		animation-delay: 0.3s;
+	}
+
+	@keyframes ae-guide-bounce {
+		0%, 80%, 100% { opacity: 0.25; transform: translateY(0); }
+		40% { opacity: 1; transform: translateY(-3px); }
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.ae-guide-working-dots i {
+			animation: none;
+			opacity: 0.6;
+		}
+	}
+
+	/* ---- per-reply transparency trace ---- */
+	.ae-guide-trace {
+		margin-top: 10px;
+		padding-top: 8px;
+		border-top: 1px dashed var(--ae-line-strong);
+		font-size: 13px;
+	}
+
+	.ae-guide-trace summary {
+		cursor: pointer;
+		color: var(--ae-muted);
+		font-size: 12px;
+		letter-spacing: 0.01em;
+	}
+
+	.ae-guide-trace summary:hover {
+		color: var(--ae-indigo-ink);
+	}
+
+	.ae-guide-trace-list {
+		margin: 8px 0 0;
+		padding-left: 18px;
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.ae-guide-trace-query {
+		color: var(--ae-ink);
+	}
+
+	.ae-guide-trace-meta {
+		color: var(--ae-muted);
+	}
+
+	.ae-guide-trace-sites {
+		display: block;
+		color: var(--ae-muted);
+		font-size: 12px;
+		word-break: break-word;
+	}
+
+	.ae-guide-trace-note {
+		margin-top: 8px;
+		color: var(--ae-muted);
+		font-size: 12px;
+		line-height: 1.5;
+	}
+
+	/* ---- standing data disclosure ---- */
+	.ae-guide-disclosure {
+		margin-top: 18px;
+		border: 1px solid var(--ae-line-strong);
+		border-radius: 10px;
+		background: var(--ae-card);
+		padding: 12px 16px;
+	}
+
+	.ae-guide-disclosure summary {
+		cursor: pointer;
+		font-size: 13px;
+		font-weight: 600;
+		color: var(--ae-indigo-ink);
+	}
+
+	.ae-guide-disclosure-body {
+		margin-top: 10px;
+		font-size: 14px;
+		line-height: 1.65;
+		color: var(--ae-muted);
+	}
+
+	.ae-guide-disclosure-body h3 {
+		margin: 14px 0 6px;
+		font-size: 11px;
+		font-weight: 700;
+		letter-spacing: var(--ae-tracking-chip);
+		text-transform: uppercase;
+		color: var(--ae-ink);
+	}
+
+	.ae-guide-disclosure-body ul {
+		margin: 0;
+		padding-left: 18px;
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.ae-guide-disclosure-body code {
+		font-size: 12px;
+	}
+
+	.ae-guide-disclosure-foot {
+		margin-top: 12px;
+		font-size: 13px;
 	}
 
 	.ae-guide-turn p {

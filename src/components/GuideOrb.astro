@@ -82,6 +82,13 @@ const { size = 140 } = Astro.props;
 					base[i * 3 + 1] = y;
 					base[i * 3 + 2] = Math.sin(th) * r;
 				}
+				// Each point's position along the Fibonacci spiral, 0..1 in the
+				// order the golden-angle walk generated them. The loading sweep
+				// below travels along this, so the animation follows the same
+				// spiral that builds the figure rather than being bolted on.
+				const spiralT = new Float32Array(COUNT);
+				for (let i = 0; i < COUNT; i++) spiralT[i] = i / (COUNT - 1);
+
 				const pos = new Float32Array(base);
 				const geo = new THREE.BufferGeometry();
 				geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
@@ -108,6 +115,7 @@ const { size = 140 } = Astro.props;
 				let clock = 0;
 				let last = performance.now();
 				let smoothLevel = 0;
+				let sweep = 0;
 				const bands = new Float32Array(BANDS);
 
 				const frame = (now: number) => {
@@ -115,7 +123,17 @@ const { size = 140 } = Astro.props;
 					last = now;
 					const cur = orbState.current;
 
-					const tempo = cur.state === "thinking" ? 2.0 : cur.state === "speaking" ? 1.1 : cur.state === "listening" ? 1.3 : 0.35;
+					const busy = cur.state === "thinking" || cur.state === "searching";
+					const tempo =
+						cur.state === "searching"
+							? 2.6
+							: cur.state === "thinking"
+								? 2.0
+								: cur.state === "speaking"
+									? 1.1
+									: cur.state === "listening"
+										? 1.3
+										: 0.35;
 					clock += dt * tempo;
 					smoothLevel += (cur.level - smoothLevel) * Math.min(1, dt * 8);
 
@@ -127,6 +145,16 @@ const { size = 140 } = Astro.props;
 					}
 
 					const amp = 0.08 + smoothLevel * 0.32;
+
+					// Loading state: a comet of displacement travelling along the
+					// Fibonacci spiral itself — the figure appears to be reading
+					// its own surface, which is a truthful shape for "out looking
+					// something up." Two passes at different speeds while
+					// searching, one slower while thinking, none when idle.
+					sweep += dt * (cur.state === "searching" ? 0.75 : 0.42);
+					if (sweep > 1) sweep -= 1;
+					const sweepGain = busy ? (cur.state === "searching" ? 0.34 : 0.22) : 0;
+
 					for (let i = 0; i < COUNT; i++) {
 						const x = base[i * 3] as number;
 						const y = base[i * 3 + 1] as number;
@@ -134,7 +162,22 @@ const { size = 140 } = Astro.props;
 						const w = Math.sin(x * 2.4 + clock) * Math.sin(y * 2.4 + clock * 0.8) * Math.sin(z * 2.4);
 						const band = bands[Math.min(BANDS - 1, ((y + 1) * 0.5 * BANDS) | 0)] as number;
 						const ripple = Math.sin(y * 9 - clock * 3.2) * band * 0.28;
-						const k = 1 + amp * w + ripple;
+
+						let comet = 0;
+						if (sweepGain > 0) {
+							const t = spiralT[i] as number;
+							// Wrapped distance along the spiral to the sweep head.
+							let d = t - sweep;
+							d -= Math.floor(d + 0.5);
+							comet = Math.exp(-(d * d) / 0.0016) * sweepGain;
+							if (cur.state === "searching") {
+								let d2 = t - ((sweep + 0.5) % 1);
+								d2 -= Math.floor(d2 + 0.5);
+								comet += Math.exp(-(d2 * d2) / 0.0016) * sweepGain * 0.6;
+							}
+						}
+
+						const k = 1 + amp * w + ripple + comet;
 						pos[i * 3] = x * k;
 						pos[i * 3 + 1] = y * k;
 						pos[i * 3 + 2] = z * k;
@@ -142,7 +185,7 @@ const { size = 140 } = Astro.props;
 					geo.attributes.position.needsUpdate = true;
 					scene.rotation.y = clock * 0.35;
 
-					const target = cur.state === "listening" ? MADDER : INDIGO;
+					const target = cur.state === "listening" || cur.state === "searching" ? MADDER : INDIGO;
 					const hex = isDark() ? target.dark : target.light;
 					color.setHex(hex);
 					mat.color.copy(color);

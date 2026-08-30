@@ -5,7 +5,10 @@
 
 export const BANDS = 12;
 
-export type OrbConversationState = "idle" | "listening" | "thinking" | "speaking";
+// "searching" is distinct from "thinking" on purpose: the visitor should be
+// able to tell, at a glance, when the guide has left the page to look
+// something up versus when it is composing from what it already knows.
+export type OrbConversationState = "idle" | "listening" | "thinking" | "searching" | "speaking";
 
 export interface OrbState {
 	state: OrbConversationState;

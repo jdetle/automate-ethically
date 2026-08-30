@@ -64,7 +64,11 @@ If a request is partly in scope, answer the part that is and name the part that 
 
 Style: warm, direct, plain language — like the rest of this site, not a policy memo. Short replies (2-4 sentences at a time) work better in a live conversation than long ones. Ask one clarifying question at a time rather than a checklist. If they haven't told you their city/state/region yet, ask before searching.`;
 
-const MAX_TOKENS_PER_REPLY = 1024;
+// Headroom matters more than it looks. This model emits extended-thinking
+// blocks and, when it searches, the search orchestration itself consumes
+// output tokens — at 1024 the reply was being truncated mid-sentence
+// (stop_reason: max_tokens) before it finished answering.
+const MAX_TOKENS_PER_REPLY = 4096;
 
 // ---- Cost & abuse controls -------------------------------------------------
 // Both are in-memory and reset when the container restarts or scales past one
@@ -74,7 +78,7 @@ const MAX_TOKENS_PER_REPLY = 1024;
 // Postgres instance) is the natural upgrade if traffic ever makes the
 // single-replica assumption wrong.
 
-const DAILY_TOKEN_BUDGET = 200_000; // ~$5-10/day at claude-opus-5 output rates
+const DAILY_TOKEN_BUDGET = 400_000; // raised with MAX_TOKENS_PER_REPLY and search; see README on cost
 const MAX_CONVERSATIONS_PER_VISITOR_PER_DAY = 12;
 const MAX_TURNS_PER_CONVERSATION = 16;
 const BUDGET_POOL = "guide-tokens";
@@ -82,6 +86,57 @@ const BUDGET_POOL = "guide-tokens";
 interface Turn {
 	role: "user" | "assistant";
 	text: string;
+}
+
+/**
+ * Extracts what the model actually did — the searches it ran and the domains
+ * it read — from the final message's own content blocks. Reported to the
+ * visitor verbatim (see the trace panel in guide.astro). Nothing here is
+ * stored; it exists only to make one reply auditable by the person reading it.
+ */
+function summariseToolUse(message: Anthropic.Message): {
+	searches: { query: string; results: number; domains: string[] }[];
+} {
+	const searches: { query: string; results: number; domains: string[] }[] = [];
+	const queriesById = new Map<string, string>();
+
+	for (const block of message.content as unknown as Record<string, unknown>[]) {
+		if (block.type === "server_tool_use" && block.name === "web_search") {
+			const input = block.input as { query?: string } | undefined;
+			if (typeof block.id === "string") queriesById.set(block.id, input?.query ?? "");
+		}
+		if (block.type === "web_search_tool_result") {
+			const query = queriesById.get(String(block.tool_use_id ?? "")) ?? "";
+			const content = block.content;
+			if (!Array.isArray(content)) {
+				// An error object rather than results — a failed or
+				// rate-limited search. Still shown, because a search that
+				// found nothing is exactly the thing a visitor should know
+				// about before trusting the answer.
+				searches.push({ query, results: 0, domains: [] });
+				continue;
+			}
+			const domains: string[] = [];
+			for (const r of content as Record<string, unknown>[]) {
+				const url = typeof r.url === "string" ? r.url : "";
+				try {
+					const host = new URL(url).hostname.replace(/^www\./, "");
+					if (host && !domains.includes(host)) domains.push(host);
+				} catch {
+					/* an unparseable URL is not worth failing a reply over */
+				}
+			}
+			searches.push({ query, results: content.length, domains });
+		}
+	}
+	return { searches };
+}
+
+function usageSummary(message: Anthropic.Message): { inputTokens: number; outputTokens: number } {
+	return {
+		inputTokens: message.usage?.input_tokens ?? 0,
+		outputTokens: message.usage?.output_tokens ?? 0,
+	};
 }
 
 function sseLine(event: string, data: unknown): string {
@@ -209,7 +264,15 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 						{
 							type: "web_search_20260209",
 							name: "web_search",
-							max_uses: 3,
+							// Not 3. This model runs web_search *inside* a
+							// code-execution step, and each attempt there can
+							// consume several uses — at 3 it exhausted the budget
+							// on the first question and reported "my search isn't
+							// working right now" to visitors, which read as a
+							// broken feature when it was really a starved one.
+							// The per-conversation and daily budgets above are
+							// what bound cost; this only bounds one reply.
+							max_uses: 10,
 						},
 					],
 				});
@@ -220,6 +283,9 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 						event.type === "content_block_start" &&
 						event.content_block.type === "server_tool_use"
 					) {
+						// web_search runs inside a code-execution step, so both
+						// surface here; the visitor only cares that it is out
+						// looking something up.
 						send("phase", { phase: "researching" });
 					}
 					if (
@@ -261,6 +327,13 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 					spend(BUDGET_POOL, (final.usage?.output_tokens ?? 0) + (final.usage?.input_tokens ?? 0));
 				}
 				if (!violation) {
+					// Transparency trace. This site's whole argument is that an
+					// automated system should be answerable for what it did, so
+					// the guide reports its own actions rather than asking to be
+					// taken on faith: every search it ran, and every domain it
+					// read. Built from the final message's own content blocks,
+					// so it reflects what actually happened, not what we intended.
+					if (final) send("trace", { ...summariseToolUse(final), usage: usageSummary(final) });
 					send("done", { stopReason: final?.stop_reason ?? "end_turn" });
 				}
 			} catch (err) {
