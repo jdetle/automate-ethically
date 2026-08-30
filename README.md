@@ -110,7 +110,8 @@ other page is still plain prerendered HTML; see the adapter note in
   to generic "your area" phrasing rather than blocking anything.
 - **Streamed** (Server-Sent Events) so replies appear as they're generated.
 - **Voice, opt-in and real:** `src/pages/api/speech.ts` proxies OpenAI TTS
-  (`tts-1`, 24kHz mono PCM), streamed the same way jacquard's Cedar does —
+  (`gpt-4o-mini-tts`, voice `cedar`, 24kHz mono PCM), streamed the same way
+  jacquard's Cedar does —
   the client (`src/lib/speech-playback.ts`) schedules audio as it arrives
   and analyzes the actual output with a Web Audio `AnalyserNode`, so the orb
   breathes on real amplitude and a real 12-band spectrum while the guide

@@ -24,7 +24,7 @@ initSentry();
  * defense in depth against someone calling it directly.
  */
 
-const DAILY_CHARACTER_BUDGET = 300_000; // ~$4.50/day at tts-1 rates
+const DAILY_CHARACTER_BUDGET = 300_000; // ~$3.60/day at gpt-4o-mini-tts rates ($12/1M chars)
 const BUDGET_POOL = "speech-characters";
 const MAX_CHARS_PER_CALL = 2000; // matches guide.ts's reply-length ceiling
 
@@ -104,9 +104,12 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 			},
 			// 24kHz mono 16-bit PCM — matches the sample rate the client
 			// schedules AudioBuffers at (see src/lib/speech-playback.ts).
+			// gpt-4o-mini-tts, not tts-1: cedar is only available on the newer
+			// model (tts-1/tts-1-hd's voice roster tops out at 9 older voices
+			// and doesn't include it) — same PCM output format either way.
 			body: JSON.stringify({
-				model: "tts-1",
-				voice: "alloy",
+				model: "gpt-4o-mini-tts",
+				voice: "cedar",
 				input: text,
 				response_format: "pcm",
 			}),
