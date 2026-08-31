@@ -101,10 +101,30 @@ jobs:
           set -euo pipefail
           ACR_NAME="${PLATFORM_ACR%%.*}"
           TAG="${GITHUB_SHA::7}"
-          az acr build --registry "$ACR_NAME" \
-            --subscription "$AZURE_SUBSCRIPTION_ID" \
-            --build-arg "PUBLIC_TURNSTILE_SITE_KEY=$PUBLIC_TURNSTILE_SITE_KEY" \
-            --image "automate-ethically:$TAG" --file Dockerfile .
+
+          # Retried because the base image pull is the one step here that
+          # fails for reasons that have nothing to do with this repo: the
+          # Dockerfile pulls nginx and node from public.ecr.aws, and a shared
+          # upstream registry answers "toomanyrequests: Rate exceeded"
+          # whenever it feels like it. That took down a deploy of code that
+          # was perfectly fine. Three attempts with backoff turns a coin flip
+          # into a non-event; a genuine build error still fails all three and
+          # still fails the run.
+          for attempt in 1 2 3; do
+            if az acr build --registry "$ACR_NAME" \
+              --subscription "$AZURE_SUBSCRIPTION_ID" \
+              --build-arg "PUBLIC_TURNSTILE_SITE_KEY=$PUBLIC_TURNSTILE_SITE_KEY" \
+              --image "automate-ethically:$TAG" --file Dockerfile .; then
+              break
+            fi
+            if [ "$attempt" = "3" ]; then
+              echo "ACR build failed three times" >&2
+              exit 1
+            fi
+            echo "ACR build attempt ${attempt} failed; retrying in $((attempt * 30))s" >&2
+            sleep $((attempt * 30))
+          done
+
           echo "IMAGE=${PLATFORM_ACR}/automate-ethically:$TAG" >> "$GITHUB_ENV"
 
       - name: Roll the app
