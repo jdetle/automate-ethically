@@ -53,6 +53,53 @@ import ProjectCard from "../components/ProjectCard.astro";
 				The thinking behind these tools lives at
 				<a href="https://jdetle.com">jdetle.com</a>.
 			</p>
+
+			<!-- DRAFT: rewrite — new copy task: "fellow travelers" list. These
+			     are other people's projects, not ours — keep the language clear
+			     that this is a pointer list, not an endorsement we've verified
+			     beyond reading the project itself. -->
+			<div class="ae-prose">
+				<h3 class="ae-h2">Other people building the same way</h3>
+				<p>
+					We didn't invent "accountability enforced by the build" — a few
+					other open source projects already treat it as an engineering
+					requirement, not a policy ask:
+				</p>
+				<ul>
+					<li>
+						<a href="https://github.com/dssg/aequitas">Aequitas</a> (University
+						of Chicago) — audits a classifier for biased outcomes before it's
+						used on bail, hiring, or benefits decisions.
+					</li>
+					<li>
+						<a href="https://github.com/Trusted-AI/AIF360">AI Fairness 360</a>
+						(IBM) and <a href="https://github.com/fairlearn/fairlearn">Fairlearn</a>
+						(Microsoft) — general-purpose toolkits for detecting and mitigating
+						biased models.
+					</li>
+					<li>
+						<a href="https://github.com/pymetrics/audit-ai">audit-AI</a>
+						(pymetrics) — built specifically to audit hiring and assessment
+						algorithms for discriminatory patterns.
+					</li>
+					<li>
+						<a href="https://github.com/open-policy-agent/opa">Open Policy
+						Agent</a> — a CNCF-graduated policy engine that turns "a decision
+						needs sign-off" into enforceable code instead of a handbook line.
+					</li>
+					<li>
+						<a href="https://github.com/activepieces/activepieces">Activepieces</a>
+						— self-hosted workflow automation with human-approval steps built
+						into the flow graph itself, not bolted on after.
+					</li>
+				</ul>
+				<p class="ae-aside">
+					We haven't used any of these ourselves — they're listed because
+					they share the principle, not because we've audited the code. If
+					you maintain one of these and something here is wrong, tell us:
+					<a href="mailto:join@automate-ethically.com?subject=Build%20page%20correction">join@automate-ethically.com</a>.
+				</p>
+			</div>
 		</div>
 	</section>
 
