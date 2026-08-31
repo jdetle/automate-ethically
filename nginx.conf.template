@@ -73,6 +73,22 @@ http {
         root /usr/share/nginx/html;
         index index.html;
 
+        # One canonical host. Both automate-ethically.com and
+        # www.automate-ethically.com are bound to this container app, and both
+        # used to answer 200 with the same pages, which meant two of
+        # everything: two entries in a social scraper's cache, so a link
+        # shared as www could keep showing a card that had already been
+        # replaced on the apex; two URLs for a search engine to split ranking
+        # between; and two sets of numbers in our own analytics. Every page
+        # already declares the apex as its canonical and its og:url, so this
+        # makes the server agree with what the pages have always said.
+        #
+        # A 301 rather than a 302 on purpose: it is permanent, and scrapers
+        # and search engines only collapse the two hosts if we say so.
+        if ($host ~* ^www\.(.+)$) {
+            return 301 https://$1$request_uri;
+        }
+
         # Astro fingerprints everything under /_astro/, so those files can be
         # cached forever; a content change produces a new hash and a new URL.
         location /_astro/ {
