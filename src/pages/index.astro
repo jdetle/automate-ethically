@@ -223,8 +223,14 @@ MUST  the human can always say no</pre>
 </Page>
 
 <style>
-	.ae-winnable {
-		margin-top: 28px;
+	/*
+	 * :global because this class is handed to <Callout> as a prop, so it
+	 * lands on an element Astro scopes to that component rather than to this
+	 * page. Without it the selector never matched anything and the banner sat
+	 * flush against the stats above it with no gap at all.
+	 */
+	:global(.ae-winnable) {
+		margin: 32px 0 4px;
 	}
 
 	/* The three MUSTs are a contract, so they are set as one — monospaced,

@@ -30,6 +30,23 @@ body {
 	color: var(--ae-on-sun);
 }
 
+/*
+ * Sun-filled surfaces need their own selection colour: the highlight above
+ * is sun yellow, and it disappears the moment the thing behind it is also
+ * sun yellow. On the "This is winnable" banner, dragging across a sentence
+ * looked like selecting nothing at all. Cobalt is the one accent in the
+ * palette that reads on yellow, in both themes.
+ */
+.ae-callout--sun::selection,
+.ae-callout--sun ::selection,
+.ae-card--sun::selection,
+.ae-card--sun ::selection,
+.ae-chip--time::selection,
+.ae-rung-rail::selection {
+	background: var(--ae-cobalt);
+	color: var(--ae-on-cobalt);
+}
+
 a {
 	color: var(--ae-cobalt);
 	text-decoration-thickness: 1px;
