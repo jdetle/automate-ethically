@@ -17,35 +17,43 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 	description="A conversation about what's organizing near you, and how your own skills fit in."
 	ogImage="/og/guide.png"
 >
-	<section class="ae-hero" aria-labelledby="guide-title">
-		<p class="ae-eyebrow">Talk it through</p>
-		<!-- DRAFT: rewrite — copy task 27: /guide framing -->
-		<h1 id="guide-title">What's organizing near you, and where you fit.</h1>
-		<p class="ae-hero-sub">
-			Tell it your town and what you're good at — it'll look for what's
-			actually happening there and think through it with you. It searches
-			the live web for real, current information; it won't invent a group
-			or a meeting that doesn't exist, and it says so when it can't find
-			anything concrete.
-		</p>
+	<section class="ae-hero ae-guide-hero" aria-labelledby="guide-title">
+		<div class="ae-guide-hero-copy">
+			<p class="ae-eyebrow">Talk it through</p>
+			<!-- DRAFT: rewrite — copy task 27: /guide framing -->
+			<h1 id="guide-title">What's organizing near you, and where you fit.</h1>
+			<p class="ae-hero-sub">
+				Tell it your town and what you're good at — it'll look for what's
+				actually happening there and think through it with you. It searches
+				the live web for real, current information; it won't invent a group
+				or a meeting that doesn't exist, and it says so when it can't find
+				anything concrete.
+			</p>
+		</div>
+		<!--
+			The orb is the conversation's state — idle, listening, thinking,
+			searching — so it sits with the status line that names that state in
+			words. On desktop the pair moves up beside the headline, where the
+			hero has room for it; on narrow screens it drops back under the copy.
+			There is exactly one instance: GuideOrb binds a single canvas.
+		-->
+		<div class="ae-guide-head">
+			<GuideOrb size={200} />
+			<div class="ae-guide-head-text">
+				<div class="ae-guide-status" id="guide-status" role="status" aria-live="polite">
+					Ready when you are.
+				</div>
+				<button type="button" class="ae-guide-voice" id="guide-voice" hidden aria-pressed="false">
+					voice off
+				</button>
+			</div>
+		</div>
 	</section>
 
 	<Stitch />
 
 	<section class="ae-section" aria-label="Conversation">
 		<div class="ae-container ae-guide">
-			<div class="ae-guide-head">
-				<GuideOrb size={140} />
-				<div class="ae-guide-head-text">
-					<div class="ae-guide-status" id="guide-status" role="status" aria-live="polite">
-						Ready when you are.
-					</div>
-					<button type="button" class="ae-guide-voice" id="guide-voice" hidden aria-pressed="false">
-						voice off
-					</button>
-				</div>
-			</div>
-
 			<div class="ae-guide-suggestions" id="guide-suggestions" hidden>
 				<p class="ae-guide-location" id="guide-location-line">
 					<span id="guide-location-text"></span>
@@ -936,9 +944,23 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 	});
 </script>
 
-<style>
+<style is:global>
+	/*
+	 * Wider than the site's reading measure: this column holds a text box and
+	 * a row of suggestion chips, not just prose. The transcript caps its own
+	 * line length below so replies stay readable at this width.
+	 */
 	.ae-guide {
-		max-width: var(--ae-max-text);
+		max-width: min(100%, 860px);
+		/* .ae-container centres what it caps; here that pushed the chips and
+		   the text box inward while the hero above stayed at the gutter. The
+		   conversation should line up with the headline it belongs to. */
+		margin-inline: 0;
+	}
+
+	.ae-guide-hero {
+		display: grid;
+		gap: 2rem;
 	}
 
 	.ae-guide-head {
@@ -952,6 +974,37 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 		flex-direction: column;
 		gap: 8px;
 		align-items: flex-start;
+	}
+
+	@media (min-width: 900px) {
+		.ae-guide-hero {
+			grid-template-columns: minmax(0, 1fr) auto;
+			align-items: start;
+			gap: 3rem;
+		}
+
+		/* Beside the headline rather than under it, so the hero's right half
+		   isn't dead space. */
+		.ae-guide-head {
+			flex-direction: column;
+			gap: 12px;
+			padding-top: 0.5rem;
+		}
+
+		.ae-guide-head-text {
+			align-items: center;
+			text-align: center;
+		}
+	}
+
+	@media (max-width: 899px) {
+		/* GuideOrb sizes its canvas from the prop; the box shrinks and the
+		   canvas scales with it. */
+		.ae-guide-head .ae-orb {
+			--orb-size: 120px;
+			width: 120px;
+			height: 120px;
+		}
 	}
 
 	.ae-guide-status {
@@ -1017,14 +1070,14 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 
 	.ae-guide-location-input {
 		flex: 1;
-		max-width: 260px;
-		padding: 6px 12px;
-		border-radius: 999px;
+		max-width: 320px;
+		padding: 11px 18px;
+		border-radius: var(--ae-r-pill);
 		border: 1px solid var(--ae-line-strong);
-		background: var(--ae-paper);
+		background: var(--ae-card);
 		color: var(--ae-ink);
 		font-family: var(--ae-sans);
-		font-size: 14px;
+		font-size: 15px;
 	}
 
 	.ae-guide-chips {
@@ -1069,9 +1122,9 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 	 * an accent rule on the speaking edge, and the label itself. */
 	.ae-guide-turn {
 		position: relative;
-		padding: 12px 16px;
-		border-radius: 10px;
-		max-width: 88%;
+		padding: 14px 18px;
+		border-radius: var(--ae-r-tile);
+		max-width: min(88%, 68ch);
 		align-self: flex-start;
 		background: var(--ae-paper-2, var(--ae-card));
 		border: 1px solid var(--ae-line);
@@ -1405,18 +1458,26 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 
 	.ae-guide-input {
 		flex: 1;
-		padding: 12px 16px;
-		border-radius: 10px;
+		padding: 16px 20px;
+		border-radius: var(--ae-r-tile);
 		border: 1px solid var(--ae-line-strong);
-		background: var(--ae-paper);
+		/* Card, not ground: on dark the page and the input were the same
+		   colour, so the box read as a hole rather than a field. */
+		background: var(--ae-card);
 		color: var(--ae-ink);
 		font-family: var(--ae-sans);
-		font-size: 16px;
+		font-size: 17px;
+		line-height: 1.5;
+		min-height: 104px;
 		resize: vertical;
 	}
 
+	.ae-guide-input::placeholder {
+		color: var(--ae-faint);
+	}
+
 	.ae-guide-input:focus-visible {
-		outline: 2px solid var(--ae-indigo);
+		outline: 2px solid var(--ae-cobalt);
 		outline-offset: 2px;
 	}
 
