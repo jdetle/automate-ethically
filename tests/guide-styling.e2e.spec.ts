@@ -36,14 +36,27 @@ test.describe("/guide styling reaches JS-created elements", () => {
 		await expect(box).toBeVisible();
 
 		const rect = await box.boundingBox();
-		expect(rect?.height ?? 0).toBeGreaterThanOrEqual(100);
+		expect(rect?.height ?? 0).toBeGreaterThanOrEqual(160);
 
 		// On dark, a box painted the same colour as the page reads as a hole.
-		const [boxBg, pageBg] = await page.evaluate(() => [
-			getComputedStyle(document.querySelector(".ae-guide-input") as Element).backgroundColor,
-			getComputedStyle(document.body).backgroundColor,
-		]);
+		const [boxBg, pageBg] = await page.evaluate(() => {
+			const box = document.querySelector(".ae-guide-input");
+			if (!box) throw new Error("missing .ae-guide-input");
+			return [getComputedStyle(box).backgroundColor, getComputedStyle(document.body).backgroundColor];
+		});
 		expect(boxBg).not.toBe(pageBg);
+	});
+
+	test("the page runs the full width of the window, chrome included", async ({ page }) => {
+		await page.setViewportSize({ width: 1900, height: 900 });
+		await page.goto("/guide");
+		const widths = await page.evaluate(() => ({
+			header: document.querySelector(".ae-header")?.getBoundingClientRect().width,
+			viewport: window.innerWidth,
+		}));
+		// The 1280px page cap is lifted here; a capped header above a
+		// full-width hero is what made this look broken.
+		expect(widths.header).toBe(widths.viewport);
 	});
 
 	test("the orb sits beside the headline on desktop and below it on mobile", async ({ page }) => {
@@ -53,8 +66,13 @@ test.describe("/guide styling reaches JS-created elements", () => {
 		await expect(orb).toBeVisible();
 
 		const wide = await page.evaluate(() => {
-			const o = document.querySelector(".ae-orb")!.getBoundingClientRect();
-			const h1 = document.querySelector("#guide-title")!.getBoundingClientRect();
+			const rect = (sel: string) => {
+				const el = document.querySelector(sel);
+				if (!el) throw new Error(`missing ${sel}`);
+				return el.getBoundingClientRect();
+			};
+			const o = rect(".ae-orb");
+			const h1 = rect("#guide-title");
 			return { orbLeft: o.left, headingRight: h1.right, orbTop: o.top, headingTop: h1.top };
 		});
 		expect(wide.orbLeft).toBeGreaterThan(wide.headingRight);
@@ -62,9 +80,12 @@ test.describe("/guide styling reaches JS-created elements", () => {
 
 		await page.setViewportSize({ width: 600, height: 900 });
 		const narrow = await page.evaluate(() => {
-			const o = document.querySelector(".ae-orb")!.getBoundingClientRect();
-			const h1 = document.querySelector("#guide-title")!.getBoundingClientRect();
-			return { orbTop: o.top, headingBottom: h1.bottom };
+			const rect = (sel: string) => {
+				const el = document.querySelector(sel);
+				if (!el) throw new Error(`missing ${sel}`);
+				return el.getBoundingClientRect();
+			};
+			return { orbTop: rect(".ae-orb").top, headingBottom: rect("#guide-title").bottom };
 		});
 		expect(narrow.orbTop).toBeGreaterThan(narrow.headingBottom);
 	});
