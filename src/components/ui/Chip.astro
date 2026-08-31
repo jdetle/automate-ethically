@@ -1,0 +1,46 @@
+---
+/*
+ * Two chips, two jobs. "time" is a sun-filled price tag — it is the only
+ * place on the site an honest time cost is stated, so it never gets used
+ * decoratively. "role" is a cobalt outline naming who an action is for.
+ */
+interface Props {
+	variant?: "time" | "role";
+	class?: string;
+}
+
+const { variant = "time", class: klass } = Astro.props;
+---
+
+<span class:list={["ae-chip", `ae-chip--${variant}`, klass]}><slot /></span>
+
+<style>
+	.ae-chip {
+		display: inline-block;
+		font-family: var(--ae-sans);
+		font-weight: 700;
+		letter-spacing: var(--ae-tracking-chip);
+		text-transform: uppercase;
+		border-radius: var(--ae-r-pill);
+		white-space: nowrap;
+		border: 2px solid transparent;
+	}
+
+	.ae-chip--time {
+		background: var(--ae-sun);
+		color: var(--ae-on-sun);
+		font-size: 0.66rem;
+		padding: 5px 11px;
+	}
+
+	/* Stated explicitly: the global .ae-chip fallback in site.css carries the
+	   sun fill, and a role chip that merely declines to set a background
+	   inherits it and reads as a time chip. */
+	.ae-chip--role {
+		background: transparent;
+		border-color: var(--ae-cobalt);
+		color: var(--ae-cobalt);
+		font-size: 0.625rem;
+		padding: 3px 10px;
+	}
+</style>

@@ -1,0 +1,105 @@
+---
+/*
+ * Status, never theatre. A callout states a fact about where something
+ * actually stands — "this is drafted, not lawyered" — so it is used sparingly
+ * and never to add emphasis to copy that is merely important.
+ *
+ * warn = coral outline (a limit you should know about before you rely on it)
+ * sun  = solid highlight (something that is already working)
+ */
+interface Props {
+	tone?: "warn" | "sun";
+	/** Runs inline, in the accent, ahead of the body copy. */
+	title?: string;
+	/**
+	 * "banner" sets the title as a display-size claim beside the body instead
+	 * of inline with it. For the one or two places on a page that state
+	 * something big and load-bearing — "This is winnable." — not for ordinary
+	 * status notes, which should stay quiet.
+	 */
+	layout?: "stack" | "banner";
+	class?: string;
+}
+
+const { tone = "warn", title, layout = "stack", class: klass } = Astro.props;
+---
+
+<div class:list={["ae-callout", `ae-callout--${tone}`, `ae-callout--${layout}`, klass]}>
+	{
+		title &&
+			(layout === "banner" ? (
+				<p class="ae-callout-claim">{title}</p>
+			) : (
+				<strong class="ae-callout-title">{title}</strong>
+			))
+	}
+	<div class="ae-callout-body"><slot /></div>
+</div>
+
+<style>
+	.ae-callout {
+		border-radius: var(--ae-r-panel);
+		padding: 20px 22px;
+		font-size: var(--ae-fs-small);
+		line-height: 1.6;
+	}
+
+	.ae-callout--warn {
+		border: 2px solid var(--ae-coral);
+		background: var(--ae-coral-wash);
+		color: var(--ae-ink);
+	}
+
+	.ae-callout--sun {
+		background: var(--ae-sun);
+		color: var(--ae-on-sun);
+	}
+
+	.ae-callout--banner {
+		display: flex;
+		gap: 36px;
+		align-items: baseline;
+		padding: 26px 30px;
+		flex-wrap: wrap;
+	}
+
+	.ae-callout-claim {
+		flex: none;
+		margin: 0;
+		font-family: var(--ae-display);
+		font-weight: 700;
+		font-size: 1.625rem;
+		line-height: 1.15;
+	}
+
+	.ae-callout--banner .ae-callout-body {
+		flex: 1 1 22rem;
+	}
+
+	.ae-callout-title {
+		color: var(--ae-coral-ink);
+	}
+
+	.ae-callout--sun .ae-callout-title {
+		color: var(--ae-on-sun);
+	}
+
+	.ae-callout :global(p) {
+		margin: 0 0 0.6rem;
+	}
+
+	.ae-callout :global(p:last-child) {
+		margin-bottom: 0;
+	}
+
+	.ae-callout :global(ul) {
+		margin: 0;
+		padding-left: 18px;
+		line-height: 1.7;
+	}
+
+	.ae-callout--sun :global(a) {
+		color: var(--ae-on-sun);
+		font-weight: 700;
+	}
+</style>

@@ -19,6 +19,8 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run lint
       - run: bunx astro check
+      - run: bun run test:unit
+
       - run: bun run build
 
       # Playwright, not the real Turnstile widget — see scripts/e2e-server.sh

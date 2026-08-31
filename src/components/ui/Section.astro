@@ -1,0 +1,76 @@
+---
+import Eyebrow from "./Eyebrow.astro";
+
+/*
+ * The standard band: gutter, max width, an optional eyebrow + heading pair.
+ * Sections are the only thing that set vertical rhythm on a page, so nothing
+ * below this needs its own top or bottom margin.
+ */
+interface Props {
+	eyebrow?: string;
+	eyebrowTone?: "coral" | "cobalt" | "ink";
+	title?: string;
+	id?: string;
+	titleId?: string;
+	tint?: boolean;
+	/** Drops the reading-width cap for grids that want the full page. */
+	wide?: boolean;
+	class?: string;
+	label?: string;
+}
+
+const {
+	eyebrow,
+	eyebrowTone = "cobalt",
+	title,
+	id,
+	titleId,
+	tint = false,
+	wide = false,
+	class: klass,
+	label,
+} = Astro.props;
+---
+
+<section
+	id={id}
+	class:list={["ae-section", tint && "ae-section--tint", klass]}
+	aria-labelledby={titleId}
+	aria-label={label}
+>
+	<div class:list={["ae-section-inner", wide && "ae-section-inner--wide"]}>
+		{eyebrow && <Eyebrow tone={eyebrowTone}>{eyebrow}</Eyebrow>}
+		{
+			title && (
+				<h2 class="ae-h2" id={titleId}>
+					{title}
+				</h2>
+			)
+		}
+		<slot />
+	</div>
+</section>
+
+<style>
+	.ae-section {
+		padding: clamp(2.75rem, 1.8rem + 3.4vw, 4.5rem) var(--ae-gutter);
+	}
+
+	.ae-section--tint {
+		background: var(--ae-ground-2);
+	}
+
+	.ae-section-inner {
+		max-width: var(--ae-max-page);
+		margin: 0 auto;
+	}
+
+	.ae-h2 {
+		margin: 0 0 1.4rem;
+		font-family: var(--ae-display);
+		font-weight: 600;
+		font-size: var(--ae-fs-h2);
+		line-height: 1.15;
+		letter-spacing: -0.01em;
+	}
+</style>

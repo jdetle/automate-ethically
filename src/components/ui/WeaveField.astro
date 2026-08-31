@@ -1,0 +1,37 @@
+---
+/*
+ * The weave behind a hero. As you scroll the grid tightens from a loose 72px
+ * warp to a dense 22px cloth — the loom doing its work while you read. Where
+ * scroll timelines are unsupported it simply sits at a static mid density,
+ * which is what the @supports guard is for.
+ */
+interface Props {
+	class?: string;
+}
+
+const { class: klass } = Astro.props;
+---
+
+<div class:list={["ae-weave-field", "ae-weave-anim", klass]} aria-hidden="true"></div>
+
+<style>
+	.ae-weave-field {
+		position: absolute;
+		inset: 0;
+		z-index: 0;
+		pointer-events: none;
+		background-image:
+			linear-gradient(var(--ae-weave) 1px, transparent 1px),
+			linear-gradient(90deg, var(--ae-weave) 1px, transparent 1px);
+		background-size: 46px 46px;
+		mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
+	}
+
+	@supports (animation-timeline: scroll()) {
+		.ae-weave-anim {
+			animation: ae-weave-tighten linear both;
+			animation-timeline: scroll();
+			animation-range: 0 90vh;
+		}
+	}
+</style>

@@ -1,6 +1,8 @@
 ---
-import "@fontsource-variable/source-serif-4";
+import "@fontsource-variable/dm-sans";
+import "@fontsource-variable/space-grotesk";
 import "../styles/tokens.css";
+import "../styles/motion.css";
 import "../styles/site.css";
 import "../styles/print.css";
 
@@ -34,12 +36,11 @@ const ogImageUrl = new URL(ogImage, Astro.site);
 		<meta property="og:image:width" content="1200" />
 		<meta property="og:image:height" content="630" />
 		<meta name="twitter:card" content="summary_large_image" />
-		<meta name="theme-color" content="#f3efe6" media="(prefers-color-scheme: light)" />
-		<meta name="theme-color" content="#131c2b" media="(prefers-color-scheme: dark)" />
+		<meta name="theme-color" content="#f6f8fe" media="(prefers-color-scheme: light)" />
+		<meta name="theme-color" content="#0b1230" media="(prefers-color-scheme: dark)" />
 	</head>
 	<body>
 		<a class="ae-skip" href="#main">Skip to content</a>
-		<div class="ae-weave" aria-hidden="true"></div>
 		<slot />
 		<!-- Beacon is a separate same-origin file, never inline: Astro inlines
 		     small bundled scripts, and anything inline would force

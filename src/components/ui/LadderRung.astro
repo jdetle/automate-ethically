@@ -1,0 +1,97 @@
+---
+/*
+ * A rung on the action ladder. The sun rail on the left carries the honest
+ * time cost and is never empty — an action whose price we cannot state is an
+ * action we are not ready to ask for.
+ */
+interface Props {
+	time: string;
+	title: string;
+	id?: string;
+	as?: "li" | "div";
+	class?: string;
+}
+
+const { time, title, id, as: Tag = "li", class: klass }: Props = Astro.props;
+---
+
+<Tag id={id} class:list={["ae-rung", klass]}>
+	<div class="ae-rung-rail" aria-hidden="true">{time}</div>
+	<div class="ae-rung-body">
+		<h2 class="ae-rung-title">{title}</h2>
+		<p class="ae-rung-time-sr">Time needed: {time}</p>
+		<slot />
+	</div>
+</Tag>
+
+<style>
+	.ae-rung {
+		display: flex;
+		align-items: stretch;
+		border: 1px solid var(--ae-line);
+		border-radius: var(--ae-r-tile);
+		overflow: hidden;
+		background: var(--ae-card);
+	}
+
+	.ae-rung-rail {
+		flex: none;
+		width: 108px;
+		background: var(--ae-sun);
+		color: var(--ae-on-sun);
+		padding: 18px 14px;
+		font-family: var(--ae-mono);
+		font-weight: 700;
+		font-size: 0.75rem;
+		line-height: 1.35;
+	}
+
+	.ae-rung-body {
+		padding: 18px 22px 22px;
+		min-width: 0;
+		flex: 1;
+	}
+
+	.ae-rung-title {
+		margin: 0 0 0.6rem;
+		font-family: var(--ae-display);
+		font-weight: 700;
+		font-size: 1.3rem;
+		line-height: 1.2;
+	}
+
+	/*
+	 * The rail is aria-hidden because it is visually adjacent to the title but
+	 * reads as a stray fragment in a screen reader; this restates it in the
+	 * reading order where it belongs.
+	 */
+	.ae-rung-time-sr {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
+	.ae-rung-body :global(p) {
+		margin: 0 0 0.8rem;
+		font-size: var(--ae-fs-body);
+		line-height: 1.6;
+	}
+
+	.ae-rung-body :global(p:last-child) {
+		margin-bottom: 0;
+	}
+
+	@media (max-width: 620px) {
+		.ae-rung {
+			flex-direction: column;
+		}
+
+		.ae-rung-rail {
+			width: auto;
+			padding: 10px 16px;
+		}
+	}
+</style>

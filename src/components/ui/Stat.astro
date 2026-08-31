@@ -1,0 +1,63 @@
+---
+/*
+ * A number never ships without its source. `source` is required for exactly
+ * that reason — there is no way to render a figure on this site without
+ * saying where it came from.
+ */
+interface Props {
+	value: string;
+	label: string;
+	source: { href: string; label: string };
+	accent?: "cobalt" | "coral" | "ink";
+	class?: string;
+}
+
+const { value, label, source, accent = "cobalt", class: klass } = Astro.props;
+---
+
+<div class:list={["ae-stat", "ae-lift", "ae-rise", klass]}>
+	<span class:list={["ae-stat-num", `ae-stat-num--${accent}`]} set:html={value} />
+	<p class="ae-stat-label">{label}</p>
+	<a class="ae-stat-src" href={source.href}>Source: {source.label}</a>
+</div>
+
+<style>
+	.ae-stat {
+		background: var(--ae-card);
+		border: 1px solid var(--ae-line);
+		border-radius: var(--ae-r-card);
+		padding: 26px 26px 22px;
+	}
+
+	.ae-stat-num {
+		display: block;
+		font-family: var(--ae-display);
+		font-weight: 700;
+		font-size: clamp(2.5rem, 1.4rem + 3.4vw, 4rem);
+		line-height: 1;
+		letter-spacing: -0.015em;
+	}
+
+	.ae-stat-num--cobalt {
+		color: var(--ae-cobalt);
+	}
+
+	.ae-stat-num--coral {
+		color: var(--ae-coral-ink);
+	}
+
+	.ae-stat-num--ink {
+		color: var(--ae-ink);
+	}
+
+	.ae-stat-label {
+		margin: 10px 0 8px;
+		font-size: 0.906rem;
+		line-height: 1.5;
+	}
+
+	.ae-stat-src {
+		font-size: var(--ae-fs-meta);
+		color: var(--ae-cobalt);
+	}
+</style>

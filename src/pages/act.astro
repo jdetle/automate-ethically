@@ -1,6 +1,13 @@
 ---
 import Page from "../layouts/Page.astro";
-import Stitch from "../components/Stitch.astro";
+import ActionMatcher from "../components/ui/ActionMatcher.astro";
+import Button from "../components/ui/Button.astro";
+import Callout from "../components/ui/Callout.astro";
+import Hero from "../components/ui/Hero.astro";
+import LadderRung from "../components/ui/LadderRung.astro";
+import Section from "../components/ui/Section.astro";
+import Signature from "../components/ui/Signature.astro";
+import Stitch from "../components/ui/Stitch.astro";
 
 // TODO(Action Network): every rung below uses a mailto: fallback because the
 // organization's Action Network account doesn't exist yet. Once it does
@@ -17,159 +24,163 @@ const email = "join@automate-ethically.com";
 	description="Pick the step you can reach today — thirty seconds or an hour, every bit of it counts."
 	ogImage="/og/act.png"
 >
-	<section class="ae-hero" aria-labelledby="act-title">
-		<p class="ae-eyebrow">Take action</p>
-		<!-- DRAFT: rewrite — copy task 12: /act framing -->
-		<h1 id="act-title">Pick the step you can reach today.</h1>
+	<!-- DRAFT: rewrite — copy task 12: /act framing -->
+	<Hero eyebrow="Take action" title="Pick the step you can reach today." titleId="act-title" chips>
 		<p class="ae-hero-sub">
 			Rules change when neighbors organize. You don't have to do all six of
-			these — even one moves the needle, and none of them cost money or ask
-			you to be an expert.
+			these — even one moves the needle, and none of them cost money or ask you
+			to be an expert.
 		</p>
-	</section>
+	</Hero>
 
 	<Stitch />
 
-	<section class="ae-section" aria-label="Ways to help">
-		<div class="ae-container">
-			<p class="ae-note">
-				New here? Start with rung 1 — it takes thirty seconds, and you can
-				always come back for the rest.
-			</p>
-			<ol class="ae-ladder">
-				<li class="ae-rung" id="join">
-					<span class="ae-rung-time">30 seconds</span>
-					<h2 class="ae-h2">1. Join the list</h2>
-					<!-- DRAFT: rewrite — copy task 13: rung one-liners -->
-					<p class="ae-prose">
-						We'll email you when there's something happening in your state —
-						nothing more often than that, and never anything asking for money.
-					</p>
-					<div class="ae-cta-row">
-						<a
-							class="ae-btn ae-btn--primary"
-							href={`mailto:${email}?subject=${encodeURIComponent("Add me to the list")}&body=${encodeURIComponent("My city/town: \nMy state: \n")}`}
-						>Join by email</a>
-					</div>
-				</li>
+	<!-- The same two questions as the home page, filtering the same list. -->
+	<Section id="match" wide>
+		<ActionMatcher name="act" heading="Start with what fits your week." />
+	</Section>
 
-				<li class="ae-rung" id="petition">
-					<span class="ae-rung-time">2 minutes</span>
-					<h2 class="ae-h2">2. Sign the petition</h2>
-					<!-- DRAFT: rewrite — copy task 14: petition text -->
-					<p class="ae-prose">
-						"One rule: a human makes the decision, and answers for it."
-						Signatures get shown to city councils as proof that people in
-						their town care about this — not sent to any candidate or party.
-					</p>
-					<div class="ae-cta-row">
-						<a
-							class="ae-btn ae-btn--primary"
-							href={`mailto:${email}?subject=${encodeURIComponent("Count me in on the petition")}&body=${encodeURIComponent("Name: \nCity/town: \nI support the rule: a human makes the decision, and answers for it.\n")}`}
-						>Sign by email</a>
-					</div>
-				</li>
+	<Stitch />
 
-				<li class="ae-rung" id="share">
-					<span class="ae-rung-time">5 minutes</span>
-					<h2 class="ae-h2">3. Share it</h2>
-					<p class="ae-prose">
-						A broadside was made to be nailed up. Print
-						<a href="/toolkit/one-pager">the one-pager</a> and pin it somewhere
-						people will actually read it — a corkboard, a laundromat, a
-						library. Or just send this page to one neighbor.
-					</p>
-					<div class="ae-cta-row">
-						<a
-							class="ae-btn ae-btn--ghost"
-							href={`mailto:?subject=${encodeURIComponent("Thought you'd want to see this")}&body=${encodeURIComponent("https://automate-ethically.com")}`}
-						>Email one neighbor</a>
-						<a class="ae-btn ae-btn--ghost" href="/toolkit/one-pager">Print it</a>
-					</div>
-					<p class="ae-prose ae-quote-cards-intro">
-						Or save one of these and post it wherever you post things:
-					</p>
-					<div class="ae-quote-cards">
-						<a href="/og/quote-principle.png" target="_blank" rel="noopener">
-							<img src="/og/quote-principle.png" alt="A human makes the decision, and answers for it." loading="lazy" />
-						</a>
-						<a href="/og/quote-loom.png" target="_blank" rel="noopener">
-							<img src="/og/quote-loom.png" alt="The loom did not remove the weaver. A person still chose the pattern, punched the cards, examined the cloth, and signed the bolt. — jacquard, 1804" loading="lazy" />
-						</a>
-						<a href="/og/quote-anger.png" target="_blank" rel="noopener">
-							<img src="/og/quote-anger.png" alt="The anger is real. Aim it at the rulebook." loading="lazy" />
-						</a>
-					</div>
-				</li>
+	<Section label="Ways to help" wide>
+		<Callout tone="warn" title="New here?">
+			Start with rung 1 — it takes thirty seconds, and you can always come back
+			for the rest.
+		</Callout>
+		<ol class="ae-ladder">
+			<LadderRung id="join" time="30 seconds" title="1. Join the list">
+				<!-- DRAFT: rewrite — copy task 13: rung one-liners -->
+				<p>
+					We'll email you when there's something happening in your state —
+					nothing more often than that, and never anything asking for money.
+				</p>
+				<div class="ae-cta-row">
+					<Button
+						size="sm"
+						href={`mailto:${email}?subject=${encodeURIComponent("Add me to the list")}&body=${encodeURIComponent("My city/town: \nMy state: \n")}`}
+					>Join by email</Button>
+				</div>
+			</LadderRung>
 
-				<li class="ae-rung" id="write">
-					<span class="ae-rung-time">10 to 20 minutes</span>
-					<h2 class="ae-h2">4. Write to your officials</h2>
-					<p class="ae-prose">
-						This one's really two smaller tasks, honestly costed:
-					</p>
-					<h3 class="ae-rung-sub">Your state representative — about 10 minutes</h3>
-					<p class="ae-prose">
-						They're easy to reach: look up their contact page, then copy the
-						note below (in your own words is even better) and paste it in.
-					</p>
-					<!-- DRAFT: rewrite — copy task 15b: this template still reads like a
-					     policy memo, not a neighbor's letter. Kai's open dissent
-					     (docs/adversarial-review/reviews/2026-08-29-action-ladder-accessibility.md):
-					     match the plain, first-person register the rest of the toolkit uses. -->
-					<blockquote class="ae-epigraph">
-						<p>
-							I'm a neighbor in [your town]. I'm asking you to support a rule:
-							when an automated system — a camera network, an algorithm — makes
-							a decision that affects someone's life, a named person has to
-							review it and be accountable for it. Montana already passed this
-							for state agencies (HB 178). I'd like to see it here too. Thank
-							you for reading this.
-						</p>
+			<LadderRung id="petition" time="2 minutes" title="2. Sign the petition">
+				<!-- DRAFT: rewrite — copy task 14: petition text -->
+				<p>
+					"One rule: a human makes the decision, and answers for it."
+					Signatures get shown to city councils as proof that people in their
+					town care about this — not sent to any candidate or party.
+				</p>
+				<div class="ae-cta-row">
+					<Button
+						size="sm"
+						href={`mailto:${email}?subject=${encodeURIComponent("Count me in on the petition")}&body=${encodeURIComponent("Name: \nCity/town: \nI support the rule: a human makes the decision, and answers for it.\n")}`}
+					>Sign by email</Button>
+				</div>
+			</LadderRung>
+
+			<LadderRung id="share" time="5 minutes" title="3. Share it">
+				<p>
+					A broadside was made to be nailed up. Print
+					<a href="/toolkit/one-pager">the one-pager</a> and pin it somewhere
+					people will actually read it — a corkboard, a laundromat, a library.
+					Or just send this page to one neighbor.
+				</p>
+				<div class="ae-cta-row">
+					<Button
+						size="sm"
+						variant="secondary"
+						href={`mailto:?subject=${encodeURIComponent("Thought you'd want to see this")}&body=${encodeURIComponent("https://automate-ethically.com")}`}
+					>Email one neighbor</Button>
+					<Button size="sm" variant="secondary" href="/toolkit/one-pager">Print it</Button>
+				</div>
+				<p class="ae-quote-cards-intro">
+					Or save one of these and post it wherever you post things:
+				</p>
+				<div class="ae-quote-cards">
+					<a href="/og/quote-principle.png" target="_blank" rel="noopener">
+						<img src="/og/quote-principle.png" alt="A human makes the decision, and answers for it." loading="lazy" />
+					</a>
+					<a href="/og/quote-loom.png" target="_blank" rel="noopener">
+						<img src="/og/quote-loom.png" alt="The loom did not remove the weaver. A person still chose the pattern, punched the cards, examined the cloth, and signed the bolt. — jacquard, 1804" loading="lazy" />
+					</a>
+					<a href="/og/quote-anger.png" target="_blank" rel="noopener">
+						<img src="/og/quote-anger.png" alt="The anger is real. Aim it at the rulebook." loading="lazy" />
+					</a>
+				</div>
+			</LadderRung>
+
+			<LadderRung id="write" time="10 to 20 minutes" title="4. Write to your officials">
+				<p>This one's really two smaller tasks, honestly costed:</p>
+				<h3 class="ae-rung-sub">Your state representative — about 10 minutes</h3>
+				<p>
+					They're easy to reach: look up their contact page, then copy the note
+					below (in your own words is even better) and paste it in.
+				</p>
+				<!-- DRAFT: rewrite — copy task 15b: this template still reads like a
+				     policy memo, not a neighbor's letter. Kai's open dissent
+				     (docs/adversarial-review/reviews/2026-08-29-action-ladder-accessibility.md):
+				     match the plain, first-person register the rest of the toolkit uses. -->
+				<figure class="ae-epigraph">
+					<blockquote>
+						I'm a neighbor in [your town]. I'm asking you to support a rule:
+						when an automated system — a camera network, an algorithm — makes a
+						decision that affects someone's life, a named person has to review
+						it and be accountable for it. Montana already passed this for state
+						agencies (HB 178). I'd like to see it here too. Thank you for
+						reading this.
 					</blockquote>
-					<h3 class="ae-rung-sub">Your city council — 15 to 20 minutes, longer the first time</h3>
-					<p class="ae-prose">
-						We can't look up your city council for you — you know your town
-						better than we do. This part takes longer because you'll need to
-						find their contact info yourself.
-					</p>
-					<div class="ae-cta-row">
-						<a class="ae-btn ae-btn--ghost" href="/toolkit/find-your-council">Find your council</a>
-					</div>
-				</li>
+				</figure>
+				<h3 class="ae-rung-sub">Your city council — 15 to 20 minutes, longer the first time</h3>
+				<p>
+					We can't look up your city council for you — you know your town better
+					than we do. This part takes longer because you'll need to find their
+					contact info yourself.
+				</p>
+				<div class="ae-cta-row">
+					<Button size="sm" variant="secondary" href="/toolkit/find-your-council">Find your council</Button>
+				</div>
+			</LadderRung>
 
-				<li class="ae-rung" id="speak">
-					<span class="ae-rung-time">1 hour</span>
-					<h2 class="ae-h2">5. Show up and speak</h2>
-					<p class="ae-prose">
-						This is the one that actually moves an ordinance. Most council
-						meetings pass with almost nobody in the room — a handful of
-						neighbors speaking on the same issue stands out.
-					</p>
-					<div class="ae-cta-row">
-						<a class="ae-btn ae-btn--primary" href="/toolkit/council-script">Get the 2-minute script</a>
-						<a class="ae-btn ae-btn--ghost" href="/toolkit/find-your-council">Find your meeting</a>
-					</div>
-				</li>
+			<LadderRung id="speak" time="1 hour" title="5. Show up and speak">
+				<p>
+					This is the one that actually moves an ordinance. Most council
+					meetings pass with almost nobody in the room — a handful of neighbors
+					speaking on the same issue stands out.
+				</p>
+				<div class="ae-cta-row">
+					<Button size="sm" href="/toolkit/council-script">Get the 2-minute script</Button>
+					<Button size="sm" variant="secondary" href="/toolkit/find-your-council">Find your meeting</Button>
+				</div>
+			</LadderRung>
 
-				<li class="ae-rung" id="lead">
-					<span class="ae-rung-time">ongoing</span>
-					<h2 class="ae-h2">6. Become a local lead</h2>
-					<p class="ae-prose">
-						<span class="ae-project-human">
-							If you're willing to be the person your town calls on this — to
-							host a meeting, track the council's agenda, or just be a
-							point of contact — tell us what's happening where you live.
-						</span>
-					</p>
-					<div class="ae-cta-row">
-						<a
-							class="ae-btn ae-btn--primary"
-							href={`mailto:${email}?subject=${encodeURIComponent("I want to help organize locally")}&body=${encodeURIComponent("My city/town: \nWhat's happening there: \nWhat I can help with (host a meeting / track the agenda / speak / something else): \n")}`}
-						>Tell us about your town</a>
-					</div>
-				</li>
-			</ol>
-		</div>
-	</section>
+			<LadderRung id="lead" time="ongoing" title="6. Become a local lead">
+				<p>
+					If you're willing to be the person your town calls on this — to host a
+					meeting, track the council's agenda, or just be a point of contact —
+					tell us what's happening where you live.
+				</p>
+				<Signature name="A person, by name.">
+					Becoming a local lead means your name is on your town's page, and you
+					answer for it.
+				</Signature>
+				<div class="ae-cta-row">
+					<Button
+						size="sm"
+						href={`mailto:${email}?subject=${encodeURIComponent("I want to help organize locally")}&body=${encodeURIComponent("My city/town: \nWhat's happening there: \nWhat I can help with (host a meeting / track the agenda / speak / something else): \n")}`}
+					>Tell us about your town</Button>
+				</div>
+			</LadderRung>
+		</ol>
+	</Section>
 </Page>
+
+<style>
+	/* The ladder rungs carry their own frame, so this is only the stack. */
+	.ae-ladder {
+		list-style: none;
+		margin: 2rem 0 0;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 18px;
+	}
+</style>

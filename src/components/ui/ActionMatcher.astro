@@ -1,0 +1,326 @@
+---
+import { ACTIONS, AUDIENCES, EMPTY_COMBOS, TIMES } from "../../data/actions";
+import Chip from "./Chip.astro";
+import Eyebrow from "./Eyebrow.astro";
+
+/*
+ * "What can you do?" — two honest questions, and live filtering with no
+ * JavaScript at all.
+ *
+ * How it works: a pair of hidden radio groups plus :has() on the wrapper. The
+ * generated rules below say, in effect, "when the writer pill is checked, hide
+ * every tile that isn't a writer tile". Selection state lives in the document
+ * where the browser already keeps it, so there is nothing to hydrate and
+ * nothing to load.
+ *
+ * The whole thing degrades honestly. Without :has() the filter bar hides
+ * itself and a note explains that every action is listed below — which is
+ * true, because filtering only ever hides tiles that are already in the page.
+ * Nothing is fetched on selection, so nothing can fail to arrive.
+ *
+ * Why is:global: the filter rules are :has() chains that reach across the
+ * component's whole subtree, and Astro's scope attribute lands on a different
+ * compound than the one being matched. Everything here is namespaced under
+ * .ae-matcher, and the ids are namespaced by the `name` prop, so two matchers
+ * on one page still do not collide.
+ */
+interface Props {
+	/** Namespaces the radio groups; must be unique per page. */
+	name?: string;
+	heading?: string;
+	id?: string;
+}
+
+const { name = "am", heading = "What can you do?", id } = Astro.props;
+const headingId = `${name}-heading`;
+
+// Bucket → the time filters that hide it. Derived from TIMES so the CSS and
+// the data can never disagree about what "5 minutes or less" means.
+const hideRules = TIMES.flatMap((t) =>
+	["b1", "b2", "b3", "b4", "b5", "b6"]
+		.filter((b) => !t.keeps.includes(b as (typeof t.keeps)[number]))
+		.map(
+			(b) =>
+				`.ae-matcher:has(.ae-matcher-time:checked[value="${t.value}"]) .ae-tile[data-bucket="${b}"]`,
+		),
+);
+
+const audienceRules = AUDIENCES.filter((a) => a.value !== "any").map(
+	(a) =>
+		`.ae-matcher:has(.ae-matcher-who:checked[value="${a.value}"]) .ae-tile:not([data-audience="${a.value}"])`,
+);
+
+const emptyRules = EMPTY_COMBOS.map(
+	(c) =>
+		`.ae-matcher:has(.ae-matcher-who:checked[value="${c.audience}"]):has(.ae-matcher-time:checked[value="${c.time}"]) .ae-matcher-empty`,
+);
+
+const filterCss = `
+${[...hideRules, ...audienceRules].join(",\n")} { display: none !important; }
+${emptyRules.join(",\n")} { display: block; }
+`;
+---
+
+<section class="ae-matcher" id={id} aria-labelledby={headingId}>
+	<Eyebrow tone="coral">Take action</Eyebrow>
+	<h2 class="ae-matcher-heading" id={headingId}>{heading}</h2>
+	<p class="ae-matcher-lede">
+		Two honest questions. Every action stays reachable below, whatever you pick.
+	</p>
+
+	<div class="ae-matcher-bar">
+		<fieldset class="ae-matcher-group">
+			<legend>Time you have</legend>
+			{
+				TIMES.map((t, i) => (
+					<>
+						<input
+							class="ae-matcher-time"
+							type="radio"
+							name={`${name}-time`}
+							id={`${name}-time-${t.value}`}
+							value={t.value}
+							checked={i === 0}
+						/>
+						<label for={`${name}-time-${t.value}`}>{t.label}</label>
+					</>
+				))
+			}
+		</fieldset>
+		<fieldset class="ae-matcher-group">
+			<legend>What you bring</legend>
+			{
+				AUDIENCES.map((a, i) => (
+					<>
+						<input
+							class="ae-matcher-who"
+							type="radio"
+							name={`${name}-who`}
+							id={`${name}-who-${a.value}`}
+							value={a.value}
+							checked={i === 0}
+						/>
+						<label for={`${name}-who-${a.value}`}>{a.label}</label>
+					</>
+				))
+			}
+		</fieldset>
+	</div>
+
+	<p class="ae-matcher-note">
+		Your browser doesn't do live filtering. Every action is listed below,
+		cheapest first — nothing is hidden.
+	</p>
+
+	<ul class="ae-matcher-grid">
+		{
+			ACTIONS.map((a) => (
+				<li
+					class:list={["ae-tile", "ae-lift", a.accountable && "ae-tile--accountable"]}
+					data-bucket={a.bucket}
+					data-audience={a.audience}
+				>
+					<div class="ae-tile-head">
+						<h3 class="ae-tile-title">
+							<a href={a.href}>{a.title}</a>
+						</h3>
+						<Chip variant="time">{a.time}</Chip>
+					</div>
+					<p class="ae-tile-body">{a.body}</p>
+					<Chip variant="role" class="ae-tile-tag">
+						{a.tag}
+					</Chip>
+				</li>
+			))
+		}
+	</ul>
+
+	<p class="ae-matcher-empty">
+		Nothing that fast for that skill yet — honest. Pick &ldquo;Any&rdquo; time,
+		or start with a 30-second neighbor task.
+	</p>
+</section>
+
+<style set:html={filterCss} is:global></style>
+
+<style is:global>
+	.ae-matcher {
+		position: relative;
+	}
+
+	.ae-matcher-heading {
+		margin: 0 0 6px;
+		font-family: var(--ae-display);
+		font-weight: 700;
+		font-size: var(--ae-fs-h2);
+		line-height: 1.15;
+	}
+
+	.ae-matcher-lede {
+		margin: 0 0 24px;
+		font-size: 0.875rem;
+		line-height: 1.55;
+		color: var(--ae-muted);
+	}
+
+	.ae-matcher-bar {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		margin-bottom: 26px;
+	}
+
+	.ae-matcher-group {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		flex-wrap: wrap;
+		border: 0;
+		margin: 0;
+		padding: 0;
+	}
+
+	.ae-matcher-group legend {
+		float: left;
+		width: 118px;
+		padding: 0;
+		font-family: var(--ae-sans);
+		font-weight: 700;
+		font-size: 0.656rem;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--ae-faint);
+	}
+
+	/* The radio still receives focus and still announces its state — it is
+	   moved out of sight, not removed from the accessibility tree. */
+	.ae-matcher-group input {
+		position: absolute;
+		opacity: 0;
+		pointer-events: none;
+	}
+
+	.ae-matcher-group label {
+		font-family: var(--ae-sans);
+		font-weight: 700;
+		font-size: 0.75rem;
+		padding: 8px 15px;
+		border: 2px solid var(--ae-line-strong);
+		border-radius: var(--ae-r-pill);
+		cursor: pointer;
+		white-space: nowrap;
+		color: var(--ae-ink);
+	}
+
+	.ae-matcher-group input:checked + label {
+		background: var(--ae-ink);
+		color: var(--ae-ground);
+		border-color: var(--ae-ink);
+	}
+
+	.ae-matcher-group input:focus-visible + label {
+		outline: 2px solid var(--ae-cobalt);
+		outline-offset: 2px;
+	}
+
+	.ae-matcher-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+		gap: 12px;
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	.ae-tile {
+		display: flex;
+		flex-direction: column;
+		gap: 7px;
+		background: var(--ae-card);
+		border: 1px solid var(--ae-line);
+		border-radius: var(--ae-r-tile);
+		padding: 15px 17px;
+	}
+
+	/* Gold, earned: this is the one action where a named person answers. */
+	.ae-tile--accountable {
+		box-shadow: inset 3px 0 0 var(--ae-gold);
+	}
+
+	.ae-tile-head {
+		display: flex;
+		justify-content: space-between;
+		gap: 10px;
+		align-items: flex-start;
+	}
+
+	.ae-tile-title {
+		margin: 0;
+		font-family: var(--ae-display);
+		font-size: 1.03rem;
+		font-weight: 700;
+		line-height: 1.25;
+	}
+
+	.ae-tile-title a {
+		color: inherit;
+		text-decoration: none;
+	}
+
+	/* The whole tile is the hit target; the anchor keeps the semantics. */
+	.ae-tile-title a::after {
+		content: "";
+		position: absolute;
+		inset: 0;
+	}
+
+	.ae-tile {
+		position: relative;
+	}
+
+	.ae-tile-title a:hover {
+		color: var(--ae-cobalt);
+	}
+
+	.ae-tile-body {
+		margin: 0;
+		font-size: var(--ae-fs-meta);
+		line-height: 1.5;
+		color: var(--ae-muted);
+	}
+
+	.ae-tile-tag {
+		align-self: flex-start;
+	}
+
+	.ae-matcher-empty,
+	.ae-matcher-note {
+		display: none;
+	}
+
+	.ae-matcher-empty {
+		margin: 16px 0 0;
+		font-weight: 600;
+		font-size: 0.844rem;
+		line-height: 1.5;
+		color: var(--ae-muted);
+	}
+
+	.ae-matcher-note {
+		margin: 0 0 20px;
+		font-size: var(--ae-fs-meta);
+		line-height: 1.5;
+		color: var(--ae-muted);
+	}
+
+	/* No :has(): the bar can't do anything, so it stops claiming it can. */
+	@supports not selector(:has(*)) {
+		.ae-matcher-bar {
+			display: none;
+		}
+
+		.ae-matcher-note {
+			display: block;
+		}
+	}
+</style>

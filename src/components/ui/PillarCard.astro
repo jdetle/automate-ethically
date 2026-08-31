@@ -1,0 +1,82 @@
+---
+import Card from "./Card.astro";
+
+/*
+ * One of the three ways in. The tone is the commitment being asked for, not
+ * decoration: cobalt for the civic demand, plain for the working practice,
+ * coral for the solidarity ask.
+ */
+interface Props {
+	/** e.g. "Pillar 01 · A demand" */
+	kicker: string;
+	title: string;
+	tone?: "plain" | "cobalt" | "coral";
+	href?: string;
+	linkLabel?: string;
+	id?: string;
+}
+
+const { kicker, title, tone = "plain", href, linkLabel, id } = Astro.props;
+---
+
+<Card tone={tone} id={id} class="ae-pillar">
+	<p class="ae-pillar-kicker">{kicker}</p>
+	<h3 class="ae-pillar-title">{title}</h3>
+	<div class="ae-pillar-body"><slot /></div>
+	{href && linkLabel && <a class="ae-pillar-link" href={href}>{linkLabel} &rarr;</a>}
+</Card>
+
+<style>
+	.ae-pillar-kicker {
+		margin: 0 0 14px;
+		font-family: var(--ae-sans);
+		font-weight: 700;
+		font-size: 0.656rem;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		color: var(--ae-cobalt);
+	}
+
+	/* On the filled pillars the kicker has to lift off the fill, not sit in it. */
+	:global(.ae-card--cobalt) .ae-pillar-kicker {
+		color: var(--ae-sun);
+	}
+
+	:global(.ae-card--coral) .ae-pillar-kicker {
+		color: var(--ae-on-coral);
+		opacity: 0.85;
+	}
+
+	.ae-pillar-title {
+		margin: 0;
+		font-family: var(--ae-display);
+		font-weight: 700;
+		font-size: 1.875rem;
+		line-height: 1.1;
+	}
+
+	.ae-pillar-body {
+		margin: 14px 0 18px;
+		font-size: 0.875rem;
+		line-height: 1.6;
+	}
+
+	.ae-pillar-body :global(p) {
+		margin: 0 0 0.7rem;
+	}
+
+	.ae-pillar-body :global(p:last-child) {
+		margin-bottom: 0;
+	}
+
+	.ae-pillar-link {
+		font-family: var(--ae-sans);
+		font-weight: 700;
+		font-size: 0.812rem;
+		text-decoration: none;
+	}
+
+	.ae-pillar-link:hover {
+		text-decoration: underline;
+	}
+</style>

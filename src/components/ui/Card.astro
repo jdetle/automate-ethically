@@ -1,0 +1,84 @@
+---
+/*
+ * The base surface. Every card carries a punch — the small pressed hole a
+ * person made in a Jacquard card — because the whole argument of this site is
+ * that a human was in the loop. Set `punch={false}` only where the card is not
+ * making that claim (a plain container, a print block).
+ */
+interface Props {
+	tone?: "plain" | "cobalt" | "coral" | "sun";
+	punch?: boolean;
+	lift?: boolean;
+	/** Element to render as — "article" for standalone content, "div" otherwise. */
+	as?: "article" | "div" | "li" | "section";
+	id?: string;
+	class?: string;
+}
+
+const { tone = "plain", punch = true, lift = true, as: Tag = "article", id, class: klass }: Props = Astro.props;
+---
+
+<Tag id={id} class:list={["ae-card", `ae-card--${tone}`, lift && "ae-lift", klass]}>
+	{punch && <span class="ae-card-punch" aria-hidden="true" />}
+	<slot />
+</Tag>
+
+<style>
+	.ae-card {
+		position: relative;
+		border-radius: var(--ae-r-card);
+		padding: 30px 28px 26px;
+		border: 1px solid transparent;
+	}
+
+	.ae-card--plain {
+		background: var(--ae-card);
+		border-color: var(--ae-line);
+		color: var(--ae-ink);
+	}
+
+	.ae-card--cobalt {
+		background: var(--ae-cobalt);
+		color: var(--ae-on-cobalt);
+	}
+
+	.ae-card--coral {
+		background: var(--ae-coral);
+		color: var(--ae-on-coral);
+	}
+
+	.ae-card--sun {
+		background: var(--ae-sun);
+		color: var(--ae-on-sun);
+	}
+
+	/* The pressed hole: a recess, not a dot — it reads as punched-through. */
+	.ae-card-punch {
+		position: absolute;
+		top: 20px;
+		right: 20px;
+		width: 13px;
+		height: 13px;
+		border-radius: 50%;
+		background: var(--ae-ground);
+		box-shadow: inset 0 1.5px 3px rgba(16, 23, 51, 0.35);
+		border: 1px solid var(--ae-line-strong);
+	}
+
+	.ae-card--cobalt .ae-card-punch,
+	.ae-card--coral .ae-card-punch {
+		border-color: transparent;
+		box-shadow: inset 0 1.5px 3px rgba(0, 0, 0, 0.4);
+	}
+
+	/* On a filled card the body copy and links inherit the fill's ink. */
+	.ae-card--cobalt :global(a),
+	.ae-card--coral :global(a) {
+		color: currentColor;
+	}
+
+	.ae-card--sun :global(a) {
+		color: var(--ae-on-sun);
+		font-weight: 700;
+	}
+</style>

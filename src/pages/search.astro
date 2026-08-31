@@ -1,6 +1,28 @@
 ---
+import { getCollection } from "astro:content";
 import Page from "../layouts/Page.astro";
-import Stitch from "../components/Stitch.astro";
+import Eyebrow from "../components/ui/Eyebrow.astro";
+import Stitch from "../components/ui/Stitch.astro";
+
+// The fallback index. Search is the one page on this site that cannot work
+// without JavaScript and without a built Pagefind index, so it ships the
+// whole site as plain links underneath. If search is unavailable for any
+// reason — no JS, a blocked script, a dev server with no index yet — the
+// visitor still gets somewhere instead of an empty box.
+const toolkit = (await getCollection("toolkit")).sort((a, b) => a.data.order - b.data.order);
+
+const pages = [
+	{ href: "/", label: "Home — the argument" },
+	{ href: "/act", label: "Take action" },
+	{ href: "/pillars/organize", label: "Organize — pass the ordinance" },
+	{ href: "/toolkit", label: "The organizing toolkit" },
+	{ href: "/toolkit/one-pager", label: "The one-pager (print it)" },
+	...toolkit.map((d) => ({ href: `/toolkit/${d.id}`, label: d.data.title })),
+	{ href: "/states", label: "State by state" },
+	{ href: "/facts", label: "Facts and sources" },
+	{ href: "/about", label: "About" },
+	{ href: "/guide", label: "Talk it through" },
+];
 ---
 
 <Page
@@ -8,7 +30,7 @@ import Stitch from "../components/Stitch.astro";
 	description="Search this site — the manifesto, the toolkit, everything."
 >
 	<section class="ae-hero" aria-labelledby="search-title">
-		<p class="ae-eyebrow">Search</p>
+		<Eyebrow tone="cobalt">Search</Eyebrow>
 		<h1 id="search-title">Find anything on this site.</h1>
 		<p class="ae-hero-sub">Type a word or two — a topic, a page name, anything you remember.</p>
 	</section>
@@ -18,23 +40,35 @@ import Stitch from "../components/Stitch.astro";
 	<section class="ae-section" aria-label="Search results">
 		<div class="ae-container ae-search-container">
 			<div id="search"></div>
-			<noscript>
-				<p class="ae-prose">
-					Search needs JavaScript to work. Without it, you can still browse
-					everything from the <a href="/">home page</a> or the
-					<a href="/toolkit">toolkit</a>.
+
+			<!--
+				Present in the HTML and removed by search-init.js once Pagefind
+				has actually mounted. Doing it that way round means the failure
+				mode is "the list is still here", not "the page is blank" — the
+				fallback cannot be forgotten, because it is what ships.
+			-->
+			<div id="search-fallback" class="ae-search-fallback">
+				<p class="ae-search-fallback-note">
+					<noscript>Search needs JavaScript, and it isn't running here. </noscript>
+					Every page on the site is listed below — nothing is hidden behind the
+					search box.
 				</p>
-			</noscript>
+				<ul class="ae-search-fallback-list">
+					{pages.map((p) => (
+						<li><a href={p.href}>{p.label}</a></li>
+					))}
+				</ul>
+			</div>
 		</div>
 	</section>
 
 	<!--
 		Pagefind is built and hosted entirely by us — its index and UI script
-		are generated at build time (`pagefind --site dist`) and served from
-		our own domain, not fetched from a third party. It's the one place on
-		the site with a real JS dependency besides the pageview beacon and the
-		(future) Action Network embed on /act, and it's scoped to this page
-		only.
+		are generated at build time (`pagefind --site dist/client`) and served
+		from our own domain, not fetched from a third party. It's the one place
+		on the site with a real JS dependency besides the pageview beacon and
+		the (future) Action Network embed on /act, and it's scoped to this page
+		only. In dev the index is mounted by integrations/pagefind-dev.mjs.
 	-->
 	<link rel="stylesheet" href="/pagefind/pagefind-ui.css" />
 	<script is:inline src="/pagefind/pagefind-ui.js"></script>
@@ -45,12 +79,41 @@ import Stitch from "../components/Stitch.astro";
 
 <style>
 	.ae-search-container {
-		--pagefind-ui-primary: var(--ae-indigo);
+		--pagefind-ui-primary: var(--ae-cobalt);
 		--pagefind-ui-text: var(--ae-ink);
-		--pagefind-ui-background: var(--ae-paper);
+		--pagefind-ui-background: var(--ae-card);
 		--pagefind-ui-border: var(--ae-line);
-		--pagefind-ui-tag: var(--ae-paper-2);
+		--pagefind-ui-tag: var(--ae-ground-2);
 		--pagefind-ui-font: var(--ae-sans);
-		--pagefind-ui-border-radius: 8px;
+		--pagefind-ui-border-radius: var(--ae-r-tile);
+	}
+
+	.ae-search-fallback-note {
+		margin: 0 0 1rem;
+		font-size: var(--ae-fs-small);
+		color: var(--ae-muted);
+	}
+
+	.ae-search-fallback-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+		gap: 10px;
+	}
+
+	.ae-search-fallback-list a {
+		display: block;
+		background: var(--ae-card);
+		border: 1px solid var(--ae-line);
+		border-radius: var(--ae-r-tile);
+		padding: 12px 16px;
+		font-weight: 600;
+		text-decoration: none;
+	}
+
+	.ae-search-fallback-list a:hover {
+		border-color: var(--ae-cobalt);
 	}
 </style>

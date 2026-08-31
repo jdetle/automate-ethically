@@ -1,0 +1,180 @@
+---
+import Page from "../../layouts/Page.astro";
+import Button from "../../components/ui/Button.astro";
+import Callout from "../../components/ui/Callout.astro";
+import Card from "../../components/ui/Card.astro";
+import Eyebrow from "../../components/ui/Eyebrow.astro";
+import Section from "../../components/ui/Section.astro";
+import Signature from "../../components/ui/Signature.astro";
+import Stitch from "../../components/ui/Stitch.astro";
+---
+
+<Page
+	title="Organize — pass the ordinance where you live"
+	description="One clause: automated decisions by your city require a named human reviewer who can be appealed to and answers by name. The model ordinance, the two-minute council script, and where it is already working."
+>
+	<section class="ae-pillar-hero" aria-labelledby="organize-title">
+		<Eyebrow tone="coral">Pillar 01 · A demand</Eyebrow>
+		<h1 id="organize-title" class="ae-pillar-h1">
+			Pass the ordinance <span class="ae-pillar-h1-accent">where you live.</span>
+		</h1>
+		<p class="ae-hero-sub ae-pillar-lede">
+			Cities decided to install the cameras. Cities can decide a person reviews
+			what they trigger. The ask is one clause: automated decisions by the city
+			require a named human reviewer who can be appealed to and answers by name.
+		</p>
+	</section>
+
+	<Section wide label="The ordinance and the script">
+		<div class="ae-pillar-grid">
+			<Card class="ae-script-card">
+				<p class="ae-script-kicker">The two-minute council script · 10–20 min prep</p>
+				<blockquote class="ae-script">
+					&ldquo;My name is _______. I live on _______. Our city runs cameras
+					that flag cars, and software that flags people. I am not asking you to
+					remove them. I am asking that when one of them makes a call about a
+					resident, a named person at the city reviews it and can be asked why.
+					One clause. I'll leave the draft with the clerk.&rdquo;
+				</blockquote>
+				<div class="ae-script-foot">
+					<Button href="/toolkit/council-script" variant="secondary" size="sm">Print the script</Button>
+					<span class="ae-script-note">Meant to be read aloud, then handed over.</span>
+				</div>
+			</Card>
+
+			<div class="ae-pillar-side">
+				<Callout tone="warn" title="Drafted, not lawyered.">
+					The model ordinance was drafted by this project and is
+					<strong>not legal advice</strong>. It will not be presented as such
+					until an actual attorney has reviewed it. If you are that attorney,
+					this is the single highest-leverage hour on this site.
+					<a href="/toolkit/ordinance">Claim the review &rarr;</a>
+				</Callout>
+				<Callout tone="sun">
+					<p class="ae-where-kicker">Where this is already working</p>
+					<ul>
+						<li>
+							50+ communities have canceled or paused camera contracts.
+							<a href="https://www.npr.org/2026/02/17/nx-s1-5612825/flock-contracts-canceled-immigration-survillance-concerns">Tracked list</a>
+						</li>
+						<li>
+							Montana requires human review of AI-driven agency decisions.
+							<a href="https://www.ncsl.org/technology-and-communication/artificial-intelligence-2025-legislation">NCSL</a>
+						</li>
+					</ul>
+				</Callout>
+			</div>
+		</div>
+	</Section>
+
+	<Stitch />
+
+	<Section wide label="Become the lead for your town">
+		<div class="ae-pillar-close">
+			<Signature name="A person, by name.">
+				Becoming a local lead means your name is on your town's page and you
+				answer for it.
+			</Signature>
+			<Button href="/act#lead">Become the lead for your town</Button>
+		</div>
+	</Section>
+</Page>
+
+<style>
+	.ae-pillar-hero {
+		max-width: var(--ae-max-page);
+		margin: 0 auto;
+		padding: clamp(3rem, 2rem + 4vw, 4.5rem) var(--ae-gutter) 0;
+	}
+
+	.ae-pillar-h1 {
+		margin: 0;
+		font-size: var(--ae-fs-h1);
+		line-height: 1.02;
+		letter-spacing: -0.015em;
+		max-width: 16ch;
+	}
+
+	.ae-pillar-h1-accent {
+		color: var(--ae-cobalt);
+	}
+
+	.ae-pillar-lede {
+		max-width: 62ch;
+	}
+
+	.ae-pillar-grid {
+		display: grid;
+		grid-template-columns: 1.2fr 1fr;
+		gap: 26px;
+		align-items: start;
+		max-width: 1100px;
+	}
+
+	.ae-pillar-side {
+		display: flex;
+		flex-direction: column;
+		gap: 18px;
+	}
+
+	.ae-script-card {
+		padding: 30px 32px;
+	}
+
+	.ae-script-kicker {
+		margin: 0 0 12px;
+		font-family: var(--ae-sans);
+		font-weight: 700;
+		font-size: 0.656rem;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		color: var(--ae-cobalt);
+		max-width: 32ch;
+	}
+
+	/* Set in the display face and italic: this is meant to be spoken, and it
+	   should not look like the surrounding argument. */
+	.ae-script {
+		margin: 0;
+		font-family: var(--ae-display);
+		font-size: 1.06rem;
+		line-height: 1.6;
+		font-style: italic;
+	}
+
+	.ae-script-foot {
+		display: flex;
+		gap: 12px;
+		align-items: center;
+		flex-wrap: wrap;
+		margin-top: 18px;
+	}
+
+	.ae-script-note {
+		font-size: var(--ae-fs-meta);
+		color: var(--ae-muted);
+	}
+
+	.ae-where-kicker {
+		margin: 0 0 10px;
+		font-family: var(--ae-sans);
+		font-weight: 700;
+		font-size: 0.656rem;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+	}
+
+	.ae-pillar-close {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 24px;
+		flex-wrap: wrap;
+	}
+
+	@media (max-width: 860px) {
+		.ae-pillar-grid {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>

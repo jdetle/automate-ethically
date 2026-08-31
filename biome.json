@@ -1,7 +1,12 @@
 {
 	"$schema": "https://biomejs.dev/schemas/2.5.11/schema.json",
 	"files": {
-		"includes": ["src/**", "tests/**", "*.mjs", "*.json"]
+		"includes": [
+			"src/**",
+			"tests/**",
+			"*.mjs",
+			"*.json"
+		]
 	},
 	"formatter": {
 		"enabled": false
@@ -17,12 +22,27 @@
 	},
 	"overrides": [
 		{
-			"includes": ["**/*.astro"],
+			"includes": [
+				"**/*.astro"
+			],
 			"linter": {
 				"rules": {
 					"correctness": {
 						"noUnusedVariables": "off",
 						"noUnusedImports": "off"
+					}
+				}
+			}
+		},
+		{
+			"includes": [
+				"src/styles/motion.css",
+				"src/styles/print.css"
+			],
+			"linter": {
+				"rules": {
+					"complexity": {
+						"noImportantStyles": "off"
 					}
 				}
 			}

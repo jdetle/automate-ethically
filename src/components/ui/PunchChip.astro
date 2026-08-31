@@ -1,0 +1,72 @@
+---
+/*
+ * Decoration, and only decoration: a loose punched card drifting near the
+ * hero. It carries no information — the holes are not a code — which is why
+ * it is aria-hidden and why float-idle is allowed to touch it at all.
+ */
+interface Props {
+	tone?: "sun" | "coral";
+	cols?: number;
+	rows?: number;
+	/** Two float phases so a pair of chips never moves in lockstep. */
+	drift?: "a" | "b";
+	/** Placement inside the hero's positioning context. */
+	top?: string;
+	right?: string;
+	width?: string;
+}
+
+const { tone = "sun", cols = 4, rows = 2, drift = "a", top = "70px", right = "120px", width = "120px" } = Astro.props;
+const holes = Array.from({ length: cols * rows });
+---
+
+<div
+	class:list={["ae-punchchip", `ae-punchchip--${tone}`, drift === "b" ? "ae-float--b" : "ae-float"]}
+	style={`--pc-cols:${cols};top:${top};right:${right};width:${width};`}
+	aria-hidden="true"
+>
+	{holes.map(() => <span />)}
+</div>
+
+<style>
+	.ae-punchchip {
+		position: absolute;
+		display: grid;
+		grid-template-columns: repeat(var(--pc-cols), 1fr);
+		place-items: center;
+		gap: 6px;
+		padding: 9px;
+		border-radius: var(--ae-r-tile);
+		box-sizing: border-box;
+		pointer-events: none;
+	}
+
+	.ae-punchchip--sun {
+		background: var(--ae-sun);
+	}
+
+	.ae-punchchip--coral {
+		background: var(--ae-coral);
+	}
+
+	.ae-punchchip span {
+		width: 9px;
+		height: 9px;
+		border-radius: 50%;
+		background: var(--ae-ground);
+	}
+
+	.ae-float {
+		animation: ae-float-idle 5s ease-in-out infinite;
+	}
+
+	.ae-float--b {
+		animation: ae-float-idle-b 7s ease-in-out infinite;
+	}
+
+	@media (max-width: 860px) {
+		.ae-punchchip {
+			display: none;
+		}
+	}
+</style>
