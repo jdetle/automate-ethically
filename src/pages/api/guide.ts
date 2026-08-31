@@ -132,10 +132,15 @@ function summariseToolUse(message: Anthropic.Message): {
 	return { searches };
 }
 
-function usageSummary(message: Anthropic.Message): { inputTokens: number; outputTokens: number } {
+function usageSummary(message: Anthropic.Message): {
+	inputTokens: number;
+	outputTokens: number;
+	cachedInputTokens: number;
+} {
 	return {
 		inputTokens: message.usage?.input_tokens ?? 0,
 		outputTokens: message.usage?.output_tokens ?? 0,
+		cachedInputTokens: message.usage?.cache_read_input_tokens ?? 0,
 	};
 }
 
@@ -241,7 +246,28 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 			extra: { ip, snippet: message.slice(0, 200) },
 		});
 	}
-	const systemForCall = injectionSuspected ? SYSTEM_PROMPT + INJECTION_REINFORCEMENT : SYSTEM_PROMPT;
+	// Two blocks, not one concatenated string, so the cached prefix stays
+	// byte-identical whatever a given visitor typed.
+	//
+	// Prompt caching is a prefix match: the request renders as tools, then
+	// system, then messages, and any byte that changes invalidates everything
+	// after it. Appending the injection reinforcement to SYSTEM_PROMPT would
+	// make the prefix depend on whether *this* message looked suspicious, so
+	// one adversarial visitor would evict the entry every other turn and every
+	// following conversation would pay full price to rebuild it. Keeping the
+	// reinforcement in its own uncached block after the breakpoint means the
+	// stable half is always the same bytes.
+	//
+	// The breakpoint sits on the last stable block, so it covers the tool
+	// definition too. SYSTEM_PROMPT is ~900 tokens and Claude Opus 5's minimum
+	// cacheable prefix is 512, so this clears the bar; below it the marker is
+	// ignored silently rather than erroring.
+	const systemForCall: Anthropic.TextBlockParam[] = [
+		{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } },
+		...(injectionSuspected
+			? [{ type: "text" as const, text: INJECTION_REINFORCEMENT }]
+			: []),
+	];
 
 	const stream = new ReadableStream({
 		async start(controller) {
@@ -326,7 +352,28 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 					if (!violation) throw err;
 				}
 				if (final) {
-					spend(BUDGET_POOL, (final.usage?.output_tokens ?? 0) + (final.usage?.input_tokens ?? 0));
+					// Cached input is billed at roughly a tenth of the normal
+					// rate, so counting it the same as fresh input would make
+					// the daily budget shrink for tokens we barely paid for.
+					const usage = final.usage;
+					const cacheRead = usage?.cache_read_input_tokens ?? 0;
+					const cacheWrite = usage?.cache_creation_input_tokens ?? 0;
+					spend(
+						BUDGET_POOL,
+						(usage?.output_tokens ?? 0) +
+							(usage?.input_tokens ?? 0) +
+							Math.round(cacheRead * 0.1) +
+							Math.round(cacheWrite * 1.25),
+					);
+
+					// One line per reply, so a cache that has quietly stopped
+					// working is visible in the logs rather than inferred from a
+					// bill weeks later. cache_read_input_tokens staying at 0
+					// across consecutive turns means something is invalidating
+					// the prefix.
+					console.log(
+						`guide: usage in=${usage?.input_tokens ?? 0} out=${usage?.output_tokens ?? 0} cache_read=${cacheRead} cache_write=${cacheWrite}`,
+					);
 				}
 				if (!violation) {
 					// Transparency trace. This site's whole argument is that an
