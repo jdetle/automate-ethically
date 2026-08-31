@@ -12,7 +12,7 @@ interface Props {
 	class?: string;
 }
 
-const { time, title, id, as: Tag = "li", class: klass } = Astro.props;
+const { time, title, id, as: Tag = "li", class: klass }: Props = Astro.props;
 ---
 
 <Tag id={id} class:list={["ae-rung", klass]}>

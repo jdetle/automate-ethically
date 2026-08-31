@@ -15,7 +15,7 @@ interface Props {
 	class?: string;
 }
 
-const { tone = "plain", punch = true, lift = true, as: Tag = "article", id, class: klass } = Astro.props;
+const { tone = "plain", punch = true, lift = true, as: Tag = "article", id, class: klass }: Props = Astro.props;
 ---
 
 <Tag id={id} class:list={["ae-card", `ae-card--${tone}`, lift && "ae-lift", klass]}>
