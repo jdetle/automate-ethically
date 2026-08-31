@@ -44,7 +44,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 					Ready when you are.
 				</div>
 				<button type="button" class="ae-guide-voice" id="guide-voice" hidden aria-pressed="false">
-					voice off
+					<span aria-hidden="true">🔊</span> Read replies aloud
 				</button>
 			</div>
 		</div>
@@ -500,6 +500,22 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 	let audioUnlocked = false;
 	let currentSpeech: SpeechSession | null = null;
 
+	/**
+	 * The label names the action, not the state. It used to read "voice off",
+	 * which is the kind of label you have to press to find out what it meant,
+	 * and the answer was usually "nothing you wanted". Production logs showed
+	 * the consequence plainly: GET /api/speech on every guide load, and not a
+	 * single POST. Nobody was turning it on, so nobody ever heard anything.
+	 */
+	function setVoiceLabel(on: boolean) {
+		if (!voiceBtn) return;
+		voiceBtn.textContent = "";
+		const icon = document.createElement("span");
+		icon.setAttribute("aria-hidden", "true");
+		icon.textContent = "🔊";
+		voiceBtn.append(icon, document.createTextNode(on ? " Reading aloud. Turn off" : " Read replies aloud"));
+	}
+
 	void speechConfigured().then((available) => {
 		if (!available || !voiceBtn) return;
 		// Never auto-enable from a stored preference: Safari only unlocks audio
@@ -508,7 +524,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 		// nudge, not the state.
 		muted = true;
 		voiceBtn.hidden = false;
-		voiceBtn.textContent = "voice off";
+		setVoiceLabel(false);
 		voiceBtn.setAttribute("aria-pressed", "false");
 
 		voiceBtn.addEventListener("click", () => {
@@ -520,21 +536,21 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 				// which is exactly how "voice on" ended up producing no sound.
 				const unlocking = unlockAudio();
 				muted = false;
-				voiceBtn.textContent = "voice on";
+				setVoiceLabel(true);
 				voiceBtn.setAttribute("aria-pressed", "true");
 				void unlocking.then((ok) => {
 					audioUnlocked = ok;
 					if (!ok) {
 						// Be honest rather than leaving a toggle that lies.
 						muted = true;
-						voiceBtn.textContent = "voice unavailable";
+						voiceBtn.textContent = "Voice unavailable in this browser";
 						voiceBtn.setAttribute("aria-pressed", "false");
 						voiceBtn.disabled = true;
 					}
 				});
 			} else {
 				muted = true;
-				voiceBtn.textContent = "voice off";
+				setVoiceLabel(false);
 				voiceBtn.setAttribute("aria-pressed", "false");
 				currentSpeech?.cancel();
 				currentSpeech = null;
@@ -1064,23 +1080,38 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 		color: var(--ae-muted);
 	}
 
+	/* A real button, not a caption. At 11px uppercase in muted grey it read as
+	   a status line next to the orb, which is why it went unpressed. */
 	.ae-guide-voice {
-		padding: 4px 12px;
-		border-radius: 999px;
-		border: 1px solid var(--ae-line-strong);
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 9px 16px;
+		border-radius: var(--ae-r-pill);
+		border: 2px solid var(--ae-cobalt);
 		background: transparent;
-		color: var(--ae-muted);
-		font-size: 11px;
-		font-weight: 600;
-		letter-spacing: var(--ae-tracking-chip);
-		text-transform: uppercase;
+		color: var(--ae-cobalt);
+		font-family: var(--ae-sans);
+		font-size: 13px;
+		font-weight: 700;
 		cursor: pointer;
+		transition: background 160ms var(--ae-ease);
+	}
+
+	.ae-guide-voice:hover {
+		background: var(--ae-cobalt-wash);
 	}
 
 	.ae-guide-voice[aria-pressed="true"] {
-		border-color: var(--ae-madder);
-		color: var(--ae-madder);
-		background: var(--ae-madder-wash);
+		border-color: var(--ae-coral);
+		color: var(--ae-coral-ink);
+		background: var(--ae-coral-wash);
+	}
+
+	.ae-guide-voice:disabled {
+		border-color: var(--ae-line-strong);
+		color: var(--ae-muted);
+		cursor: default;
 	}
 
 	.ae-guide-suggestions {
