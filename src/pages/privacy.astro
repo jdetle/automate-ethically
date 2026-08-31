@@ -1,0 +1,164 @@
+---
+import Page from "../layouts/Page.astro";
+import Callout from "../components/ui/Callout.astro";
+import Hero from "../components/ui/Hero.astro";
+import Section from "../components/ui/Section.astro";
+import Stitch from "../components/ui/Stitch.astro";
+---
+
+<Page
+	title="What this site knows about you"
+	description="The short version in plain language, and a longer technical brief for people who want to check the claims rather than take them."
+>
+	<Hero eyebrow="Privacy" title="What this site knows about you." titleId="privacy-title">
+		<p class="ae-hero-sub">
+			Short version: almost nothing, and nothing that points at you. The longer
+			version is below, with enough detail to check rather than trust.
+		</p>
+	</Hero>
+
+	<Stitch />
+
+	<Section eyebrow="In plain language" title="The whole answer in five lines" titleId="plain-title">
+		<div class="ae-prose">
+			<ul>
+				<li>No cookies. Nothing is stored on your device.</li>
+				<li>No accounts, and nothing that follows you to another website.</li>
+				<li>
+					We count which pages get read and roughly how many people visit. We
+					do not know which of those visits were yours.
+				</li>
+				<li>Nothing you type into this site is kept.</li>
+				<li>No advertising company, analytics company, or data broker is involved.</li>
+			</ul>
+			<p>
+				That is the entire answer for most people. Everything below is for
+				readers who would rather verify it than be told it.
+			</p>
+		</div>
+	</Section>
+
+	<Stitch />
+
+	<Section eyebrow="For the technically minded" title="Exactly what is collected" titleId="collected-title">
+		<div class="ae-prose">
+			<p>
+				One request per page view, to a path on this same domain, containing
+				exactly four fields:
+			</p>
+			<ul>
+				<li><code>path</code>, the page you loaded</li>
+				<li><code>referrer</code>, the page that linked you here, if any</li>
+				<li><code>screen_bucket</code>, one of <code>mobile</code>, <code>tablet</code>, <code>desktop</code></li>
+				<li><code>tenant</code>, a constant identifying this site</li>
+			</ul>
+			<p>
+				There is no visitor ID, no session ID, no fingerprint, no
+				<code>localStorage</code> write, and no capture of anything you click
+				or type. The source is one short file you can read in a minute:
+				<a href="/beacon.js">/beacon.js</a>. It is served as a plain file
+				rather than inlined so that the Content Security Policy can refuse
+				inline scripts outright.
+			</p>
+			<p>
+				The request goes to this origin and is relayed onward by our own
+				server, which attaches the credential. The key is therefore never in
+				the page, and blocking the request is a supported outcome rather than
+				something we route around: the path is not disguised, and an
+				ad blocker that blocks it is behaving correctly.
+			</p>
+		</div>
+	</Section>
+
+	<Section eyebrow="The honest caveat" title="This is minimisation, not differential privacy" titleId="dp-title">
+		<div class="ae-prose">
+			<p>
+				Differential privacy is a formal guarantee. It says that whether or not
+				any one person is in a dataset changes the published result by at most
+				a bounded amount, achieved by adding calibrated random noise to
+				answers, with the strength of the guarantee stated as a parameter
+				called epsilon. It protects the <em>outputs</em> you publish against
+				someone reasoning backwards to an individual.
+			</p>
+			<p>
+				This site does something different and simpler. It minimises at
+				collection: because no identifier is ever recorded, there is no row
+				anywhere that is about you, and therefore nothing to re-identify from
+				a per-person record.
+			</p>
+			<Callout tone="warn" title="Where that falls short.">
+				Minimisation is not a formal guarantee, and we are not going to
+				call it one. On a low-traffic site, an unusual referrer combined
+				with an unusual page and a narrow time window could in principle
+				single out one visit. We think that risk is small and we have not
+				eliminated it. If we ever publish visitor statistics rather than
+				just reading them, the right answer is noise added to counts with
+				a stated epsilon and a per-period budget, and we would publish the
+				epsilon alongside the numbers.
+			</Callout>
+			<p>
+				We would rather describe the property we actually have than borrow the
+				name of a stronger one. A site arguing that automated decisions should
+				be answerable does not get to be vague about its own.
+			</p>
+		</div>
+	</Section>
+
+	<Section eyebrow="Worth your attention" title="What to check, if you are checking" titleId="audit-title">
+		<div class="ae-prose">
+			<p>
+				If you want to audit rather than read, these are the parts where a
+				privacy claim on a site like this usually turns out to be false:
+			</p>
+			<ul>
+				<li>
+					<strong>Third-party requests.</strong> Open the network panel. Every
+					request should be to this domain, with one exception: the human
+					check on <a href="/guide">the guide</a> loads from Cloudflare,
+					because a bot check served from the site it protects would not mean
+					anything.
+				</li>
+				<li>
+					<strong>The Content Security Policy.</strong> Check the response
+					headers. Inline script is refused rather than allowed, which is the
+					difference between a policy and a decoration.
+				</li>
+				<li>
+					<strong>Where the analytics key lives.</strong> Search the page
+					source for a credential. There is not one, because it is attached
+					server-side on the way out.
+				</li>
+				<li>
+					<strong>Search.</strong> The index and its script are generated at
+					build time and served from this domain. No query you type reaches
+					anyone else.
+				</li>
+				<li>
+					<strong>Fonts and images.</strong> Self-hosted. No font CDN, which is
+					a common quiet leak of visitor IP addresses.
+				</li>
+			</ul>
+		</div>
+	</Section>
+
+	<Section eyebrow="One exception, disclosed" title="The guide, and your IP address" titleId="guide-title">
+		<div class="ae-prose">
+			<p>
+				<a href="/guide">The guide</a> is the one page that behaves
+				differently, and it says so on itself before you use it. It makes a
+				single, one-time use of your IP address to guess your general area, so
+				it can suggest things happening near you. That guess is never stored
+				and never logged, and you can simply type a different place instead.
+				What you send it goes to a model in order to answer you, and the page
+				lists in full what is sent and to whom.
+			</p>
+			<p>
+				The rest of the site is static HTML. Four pages run any script at all:
+				the page-view beacon above, search, the guide, and the figure that
+				moves while the guide is talking. Everything else renders without
+				JavaScript, which is a consequence of building the site this way
+				rather than a claim we want to make at you.
+			</p>
+		</div>
+	</Section>
+</Page>

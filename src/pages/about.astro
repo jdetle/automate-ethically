@@ -22,50 +22,27 @@ import ProjectCard from "../components/ProjectCard.astro";
 
 	<section class="ae-section" id="projects" aria-labelledby="projects-title">
 		<div class="ae-container">
-			<p class="ae-eyebrow">Built on these principles</p>
-			<h2 class="ae-h2" id="projects-title">Proof, in working code</h2>
-			<div class="ae-projects">
-				<!-- DRAFT: rewrite — copy task 6: project card jacquard -->
-				<ProjectCard name="jacquard" chip="in development" chipQuiet>
-					<p>
-						Version control where a decision is an object in the graph. An
-						agent can draft a decision and propose it.
-					</p>
-					<p class="ae-project-human">
-						Only a person can settle it, with a few sentences in their own
-						words, under their own name.
-					</p>
-				</ProjectCard>
-				<!-- DRAFT: rewrite — copy task 7: project card phantom-thread -->
-				<ProjectCard name="phantom-thread" chip="request an invite">
-					<p>
-						A careful review and a rubber stamp leave the same green check.
-						phantom-thread makes them distinguishable, and rewards the
-						careful one.
-					</p>
-					<p>
-						<a href="https://jdetle.com/phantom-thread">Preview at
-						jdetle.com/phantom-thread</a> (invite-gated today).
-					</p>
-				</ProjectCard>
-			</div>
-			<p class="ae-aside">
-				The thinking behind these tools lives at
-				<a href="https://jdetle.com">jdetle.com</a>.
-			</p>
-
+			<p class="ae-eyebrow">Software that already does this</p>
+			<h2 class="ae-h2" id="projects-title">Tools you can use today</h2>
 			<!-- DRAFT: rewrite — new copy task: "fellow travelers" list. These
-			     are other people's projects, not ours — keep the language clear
+			     are other people's projects, not ours. Keep the language clear
 			     that this is a pointer list, not an endorsement we've verified
-			     beyond reading the project itself. -->
+			     beyond reading the project itself. It leads this section on
+			     purpose: these are working, adopted tools, and ours are not
+			     yet. Don't reorder them back. -->
 			<div class="ae-prose">
-				<h3 class="ae-h2">Other people building the same way</h3>
 				<p>
-					We didn't invent "accountability enforced by the build". A few
-					other open source projects already treat it as an engineering
-					requirement, not a policy ask:
+					We didn't invent "accountability enforced by the build". These are
+					other people's projects, they are real, and several of them are
+					already used in production. If you want something to pick up this
+					week, start here rather than with us:
 				</p>
 				<ul>
+					<li>
+						<a href="https://github.com/open-policy-agent/opa">Open Policy
+						Agent</a> is a CNCF-graduated policy engine that turns "a decision
+						needs sign-off" into enforceable code instead of a handbook line.
+					</li>
 					<li>
 						<a href="https://github.com/dssg/aequitas">Aequitas</a> (University
 						of Chicago) audits a classifier for biased outcomes before it's
@@ -83,11 +60,6 @@ import ProjectCard from "../components/ProjectCard.astro";
 						algorithms for discriminatory patterns.
 					</li>
 					<li>
-						<a href="https://github.com/open-policy-agent/opa">Open Policy
-						Agent</a> is a CNCF-graduated policy engine that turns "a decision
-						needs sign-off" into enforceable code instead of a handbook line.
-					</li>
-					<li>
 						<a href="https://github.com/activepieces/activepieces">Activepieces</a>
 						offers self-hosted workflow automation with human-approval steps built
 						into the flow graph itself, not bolted on after.
@@ -100,6 +72,42 @@ import ProjectCard from "../components/ProjectCard.astro";
 					<a href="mailto:join@automate-ethically.com?subject=Build%20page%20correction">join@automate-ethically.com</a>.
 				</p>
 			</div>
+
+			<h3 class="ae-h2 ae-projects-ours">Two of our own, both early</h3>
+			<p class="ae-plain">
+				Neither of these is finished, and neither is something we'd ask you to
+				depend on yet. They're here because they're claimable: an early project
+				is where one person's work still changes the shape of the thing.
+			</p>
+			<div class="ae-projects">
+				<!-- DRAFT: rewrite — copy task 6: project card jacquard -->
+				<ProjectCard name="jacquard" chip="early, wants help" chipQuiet>
+					<p>
+						Version control where a decision is an object in the graph. An
+						agent can draft a decision and propose it.
+					</p>
+					<p class="ae-project-human">
+						Only a person can settle it, with a few sentences in their own
+						words, under their own name.
+					</p>
+				</ProjectCard>
+				<!-- DRAFT: rewrite — copy task 7: project card phantom-thread -->
+				<ProjectCard name="phantom-thread" chip="early, invite only" chipQuiet>
+					<p>
+						A careful review and a rubber stamp leave the same green check.
+						phantom-thread makes them distinguishable, and rewards the
+						careful one.
+					</p>
+					<p>
+						<a href="https://jdetle.com/phantom-thread">Preview at
+						jdetle.com/phantom-thread</a> (invite-gated today).
+					</p>
+				</ProjectCard>
+			</div>
+			<p class="ae-aside">
+				The thinking behind these tools lives at
+				<a href="https://jdetle.com">jdetle.com</a>.
+			</p>
 		</div>
 	</section>
 
@@ -142,3 +150,11 @@ import ProjectCard from "../components/ProjectCard.astro";
 		</div>
 	</section>
 </Page>
+
+<style>
+	/* The early projects sit below the working ones, and read as a second
+	   section rather than a continuation of the list above them. */
+	.ae-projects-ours {
+		margin-top: 3rem;
+	}
+</style>

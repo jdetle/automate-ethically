@@ -170,7 +170,7 @@ const cards = {
 			"The loom did not",
 			"remove the weaver.",
 		],
-		attribution: "A person chose the pattern, punched the cards, and signed the bolt. 1804.",
+		attribution: "A person chose the pattern, punched the cards, and signed the bolt.",
 		size: 66,
 		lead: 82,
 		accent: COBALT,
