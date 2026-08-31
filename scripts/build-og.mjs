@@ -12,6 +12,7 @@
 // front means what you see here is what the card looks like. Both faces are
 // OFL; see the licence in each upstream package.
 import { Resvg } from "@resvg/resvg-js";
+import { createHash } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -183,6 +184,17 @@ const cards = {
 };
 
 mkdirSync(outDir, { recursive: true });
+
+// A content hash per card, written out as a manifest and appended to the
+// og:image URL as ?v=. Social scrapers cache the image by URL and keep it for
+// a long time; when we regenerated every card, the filenames were unchanged,
+// so Threads and anything else on Meta's infrastructure went on serving the
+// bitmap they had cached months earlier. Versioning the URL means a
+// regenerated card is a URL nobody has seen before, so a stale one cannot be
+// served once the page itself is re-read. Filenames stay stable, so a link
+// straight to /og/default.png still works.
+const manifest = {};
+
 for (const [name, svg] of Object.entries(cards)) {
 	writeFileSync(join(outDir, `${name}.svg`), `${svg}\n`);
 	const png = new Resvg(svg, {
@@ -192,5 +204,12 @@ for (const [name, svg] of Object.entries(cards)) {
 		.render()
 		.asPng();
 	writeFileSync(join(outDir, `${name}.png`), png);
-	console.log(`${name}.png  ${(png.length / 1024).toFixed(0)}kb`);
+	manifest[name] = createHash("sha256").update(png).digest("hex").slice(0, 10);
+	console.log(`${name}.png  ${(png.length / 1024).toFixed(0)}kb  v=${manifest[name]}`);
 }
+
+writeFileSync(
+	join(root, "src/data/og-manifest.json"),
+	`${JSON.stringify(manifest, null, "\t")}\n`,
+);
+console.log("wrote src/data/og-manifest.json");
