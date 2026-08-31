@@ -599,9 +599,15 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 	function beginSpeech(row: HTMLDivElement | null): SpeechSession | null {
 		if (muted || !audioUnlocked) return null;
 		try {
-			const session = startSpeech(ensureSession, setLevelAndSpectrum);
+			// The indicator is shown from the onAudible callback, not here.
+			// It used to appear the moment a session was constructed, which is
+			// before a single byte of audio has been asked for — so a
+			// /api/speech that answered 503, or a rejected session token, left
+			// "Reading aloud — stop" sitting under a silent reply.
+			const session = startSpeech(ensureSession, setLevelAndSpectrum, () => {
+				if (currentSpeech === session) showSpeakingIndicator(row);
+			});
 			currentSpeech = session;
-			showSpeakingIndicator(row);
 			void session.done.then(() => {
 				if (currentSpeech === session) {
 					currentSpeech = null;
@@ -805,6 +811,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 		// Opened up front so the first finished sentence can be spoken while
 		// the rest is still being written.
 		const speech = beginSpeech(replyRow);
+		let speechSettled = false;
 		let speechBuffer = "";
 
 		try {
@@ -813,7 +820,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 				session = await ensureSession();
 			} catch {
 				replyP.textContent = "Couldn't verify you're human — reload the page and try again.";
-				return;
+				return; // the finally below settles `speech`
 			}
 
 			const post = (token: string) =>
@@ -899,6 +906,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 						// screen next to it.
 						errored = true;
 						speech?.cancel();
+						speechSettled = true;
 						replyP.textContent = data.message;
 					}
 				}
@@ -913,11 +921,18 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 				if (speech) {
 					if (speechBuffer.trim()) speech.enqueue(speechBuffer);
 					speech.end();
+					speechSettled = true;
 				}
 			}
 		} catch {
 			replyP.textContent = "Couldn't reach the guide — check your connection and try again.";
 		} finally {
+			// Every exit from this function has to settle the session. Two did
+			// not: the "couldn't verify you're human" return above, and the
+			// network-failure catch. Both left a live session whose `done`
+			// never resolved, which is what pinned "Reading aloud — stop"
+			// under a reply that was never read aloud.
+			if (speech && !speechSettled) speech.cancel();
 			clearWorking(replyRow);
 			if (!currentSpeech) setOrbConversationState("idle");
 			if (status) status.textContent = "Ready when you are.";
@@ -1082,9 +1097,19 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 
 	/* `display` set above wins the specificity fight against the `hidden`
 	 * attribute's UA-stylesheet default — without this, an element can be
-	 * both `hidden` and visibly flexed at the same time. */
+	 * both `hidden` and visibly flexed at the same time.
+	 *
+	 * Every JS-toggled element in this file that is given a `display` needs a
+	 * line here. The speaking pill did not have one, and once these styles
+	 * became global (they had to, to reach the JS-created nodes at all) its
+	 * `display: inline-flex` started beating `hidden` — so "Reading aloud —
+	 * stop" appeared under every reply, including replies that were never
+	 * read aloud and error bubbles where nothing was ever spoken. Compound
+	 * selectors, not a bare `[hidden]`, so this wins on specificity rather
+	 * than on source order. */
 	.ae-guide-location[hidden],
-	.ae-guide-location-form[hidden] {
+	.ae-guide-location-form[hidden],
+	.ae-guide-turn-speaking[hidden] {
 		display: none;
 	}
 
