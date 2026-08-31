@@ -1,7 +1,22 @@
-# Builds the site image via an ACR Quick Task and rolls the container app,
-# on the platform's shared self-hosted runner fleet (ACA Job, scale-to-zero,
-# registered via the platform-ci-runner GitHub App — see
-# jdetle/platform infra/modules/platform-runners.bicep).
+# Builds the site image via an ACR Quick Task and rolls the container app.
+#
+# Runs on GitHub-hosted ubuntu-latest, not the platform's shared self-hosted
+# fleet. It used to ask for `[self-hosted, linux, x64, azcaj]`, and because no
+# runner was ever registered against this repo, every deploy run since the
+# repo began queued on that label and was eventually cancelled — the site was
+# only ever updated by running these commands by hand. Nothing in this job
+# needs a self-hosted runner: `az acr build` builds server-side in ACR (no
+# Docker daemon here), the ACR is publicly reachable, and the OIDC federated
+# credential is scoped to the repo and ref, not to where the runner lives. The
+# repo is public, so hosted minutes are free.
+#
+# To go back to the shared fleet, set `runs-on` below and complete the two
+# manual GitHub-UI steps it depends on (neither can be done with a normal
+# token): install the platform-ci-runner GitHub App on this repo, and add
+# jdetle/automate-ethically to the gh-runner-pat fine-grained PAT's repository
+# access list. Both live in jdetle/platform's setup. Until both are done, jobs
+# queue on the self-hosted label but never pick up — which is the state this
+# commit is fixing.
 #
 # Auth is OIDC federated credentials, not a stored AZURE_CREDENTIALS JSON
 # blob: sp-automate-ethically-deploy trusts only
@@ -43,13 +58,6 @@
 #                        be public (it can only submit events, not read data),
 #                        so unlike the keys above it's fine as a plain env var
 #                        rather than a Container Apps secret.
-#
-# Two manual, one-time GitHub-UI steps this workflow depends on (cannot be
-# done via API with a normal token — see README's Deploy section):
-#   1. Install/configure the platform-ci-runner GitHub App on this repo.
-#   2. Add jdetle/automate-ethically to the gh-runner-pat fine-grained PAT's
-#      repository access list (both live in jdetle/platform's setup).
-# Until both are done, jobs queue on the self-hosted label but never pick up.
 name: deploy-azure
 
 on:
@@ -68,7 +76,7 @@ permissions:
 
 jobs:
   deploy:
-    runs-on: [self-hosted, linux, x64, azcaj]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
