@@ -232,9 +232,18 @@ platform ACR; `az containerapp update` rolls `ca-automate-ethically` in
 `s10`). CI (`.github/workflows/ci.yml`) runs lint + typecheck (`astro check`)
 + build on GitHub-hosted `ubuntu-latest` on every PR and push; the deploy
 workflow (`.github/workflows/deploy-azure.yml`) runs on push to `main` and
-via manual dispatch, on the platform's shared **self-hosted runner fleet**
-(`runs-on: [self-hosted, linux, x64, azcaj]` — an Azure Container Apps Job,
-scale-to-zero, defined in `jdetle/platform`'s `infra/modules/platform-runners.bicep`).
+via manual dispatch, also on `ubuntu-latest`.
+
+It used to run on the platform's shared self-hosted fleet
+(`runs-on: [self-hosted, linux, x64, azcaj]`, an Azure Container Apps Job
+defined in `jdetle/platform`'s `infra/modules/platform-runners.bicep`), but no
+runner was ever registered against this repo, so every deploy run queued on
+that label and was cancelled — the site was only ever updated by hand. Nothing
+in the job needs a self-hosted runner: `az acr build` builds server-side in
+ACR, the ACR is publicly reachable, and the OIDC federated credential is
+scoped to repo and ref rather than to the runner. Moving back to the fleet
+means restoring `runs-on` and completing the two manual GitHub-UI steps noted
+at the top of the workflow.
 
 The container runs two processes: nginx (everything, as always) and a small
 Node server that backs only `/api/guide` (`docker-entrypoint.sh` starts both;
