@@ -23,6 +23,12 @@ jobs:
 
       - run: bun run build
 
+      # Reads the built HTML, so it judges what a visitor actually sees and
+      # ignores code comments. Most of this site was machine-drafted; a site
+      # arguing that a person should answer for what a machine produced can't
+      # itself read like nobody checked.
+      - run: bun run check:copy
+
       # Playwright, not the real Turnstile widget — see scripts/e2e-server.sh
       # for why: real Turnstile is designed to be unpassable by automation,
       # so this uses Cloudflare's official test keys instead. Regression

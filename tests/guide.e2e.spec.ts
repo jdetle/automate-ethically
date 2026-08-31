@@ -175,7 +175,7 @@ test.describe("/guide — verify-then-chat flow", () => {
 		const input = page.locator("#guide-input");
 		const status = page.locator("#guide-status");
 
-		await expect(status).toHaveText("Couldn't verify you're human — reload the page to try again.", {
+		await expect(status).toHaveText("Couldn't verify you're human. Reload the page to try again.", {
 			timeout: 10_000,
 		});
 		await expect(input).toBeDisabled();

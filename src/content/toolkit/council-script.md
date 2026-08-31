@@ -9,7 +9,7 @@ order: 2
 <!-- DRAFT: rewrite — copy task 18: council script (most voice-critical item in the toolkit) -->
 
 You don't need to be an expert to do this. Most city council meetings set aside
-time for anyone who lives there to speak for two or three minutes — no
+time for anyone who lives there to speak for two or three minutes. No
 appointment, no special knowledge required. Here's a script that fits in two
 minutes. Fill in your own words where you see a blank. Practice it out loud
 once before you go; that's it.
@@ -23,8 +23,8 @@ once before you go; that's it.
 > *(for example: the license-plate cameras on Main Street, or the data center
 > proposed near the school)*.
 >
-> Here's what I'm asking for. When an automated system — a camera network, an
-> algorithm, a piece of software — makes a decision that affects someone's
+> Here's what I'm asking for. When an automated system (a camera network, an
+> algorithm, a piece of software) makes a decision that affects someone's
 > life, I want a rule that says: **a named person has to review it, and that
 > person is accountable for it.** Not "the system flagged it." A person, with
 > a name, who looked at it and signed off.
@@ -44,7 +44,7 @@ once before you go; that's it.
   starting point, not a performance. Say it in your own words if that's more
   comfortable.
 - **Bring a printed copy.** Reading from a page is completely normal at these
-  meetings — nobody expects you to have it memorized.
+  meetings, and nobody expects you to have it memorized.
 - **You may get a short, awkward silence after you speak.** That's normal too.
   Councils often don't respond to public comment in the moment; the comment
   becomes part of the public record either way.
