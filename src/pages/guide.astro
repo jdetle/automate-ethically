@@ -38,7 +38,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 			There is exactly one instance: GuideOrb binds a single canvas.
 		-->
 		<div class="ae-guide-head">
-			<GuideOrb size={200} />
+			<GuideOrb size={340} />
 			<div class="ae-guide-head-text">
 				<div class="ae-guide-status" id="guide-status" role="status" aria-live="polite">
 					Ready when you are.
@@ -946,21 +946,45 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 
 <style is:global>
 	/*
-	 * Wider than the site's reading measure: this column holds a text box and
-	 * a row of suggestion chips, not just prose. The transcript caps its own
-	 * line length below so replies stay readable at this width.
+	 * This page runs the full width of the window rather than the site's
+	 * 1280px page measure. Everywhere else that cap is doing real work — it
+	 * keeps a column of argument readable. Here the page is a workspace: a
+	 * text box you type paragraphs into, a row of suggestion chips, and a
+	 * transcript. Capping those at 1280 left most of a wide screen empty
+	 * while the box you actually use stayed small.
+	 *
+	 * Line length is still capped, just further in: the hero copy and each
+	 * reply set their own measure, so "full width" never means a 200-character
+	 * line of prose.
 	 */
 	.ae-guide {
-		max-width: min(100%, 860px);
-		/* .ae-container centres what it caps; here that pushed the chips and
-		   the text box inward while the hero above stayed at the gutter. The
-		   conversation should line up with the headline it belongs to. */
+		max-width: none;
 		margin-inline: 0;
 	}
 
 	.ae-guide-hero {
 		display: grid;
 		gap: 2rem;
+		max-width: none;
+	}
+
+	.ae-guide-hero-copy {
+		max-width: 46rem;
+	}
+
+	/*
+	 * Lift the page cap for this route by retargeting the token every layout
+	 * reads, rather than overriding each consumer. Header and footer style
+	 * themselves in their own scoped blocks, so a global `.ae-header` rule
+	 * here loses the specificity fight (scoped selectors carry the
+	 * data-astro-cid attribute); the variable reaches them regardless, and
+	 * takes the stitch dividers with it.
+	 *
+	 * This ships only with /guide — Astro bundles a page's CSS per page,
+	 * is:global or not — so nothing else loses the 1280px cap.
+	 */
+	:root {
+		--ae-max-page: none;
 	}
 
 	.ae-guide-head {
@@ -979,7 +1003,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 	@media (min-width: 900px) {
 		.ae-guide-hero {
 			grid-template-columns: minmax(0, 1fr) auto;
-			align-items: start;
+			align-items: center;
 			gap: 3rem;
 		}
 
@@ -987,23 +1011,36 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 		   isn't dead space. */
 		.ae-guide-head {
 			flex-direction: column;
-			gap: 12px;
-			padding-top: 0.5rem;
+			gap: 16px;
 		}
 
 		.ae-guide-head-text {
 			align-items: center;
 			text-align: center;
 		}
+
+		.ae-guide-status {
+			font-size: 15px;
+		}
 	}
 
+	/*
+	 * GuideOrb sizes its canvas from the prop and stretches it to the box, so
+	 * these only change how much room it takes — it stays sharp at every step.
+	 */
 	@media (max-width: 899px) {
-		/* GuideOrb sizes its canvas from the prop; the box shrinks and the
-		   canvas scales with it. */
 		.ae-guide-head .ae-orb {
-			--orb-size: 120px;
-			width: 120px;
-			height: 120px;
+			--orb-size: 140px;
+			width: 140px;
+			height: 140px;
+		}
+	}
+
+	@media (min-width: 900px) and (max-width: 1279px) {
+		.ae-guide-head .ae-orb {
+			--orb-size: 220px;
+			width: 220px;
+			height: 220px;
 		}
 	}
 
@@ -1070,14 +1107,14 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 
 	.ae-guide-location-input {
 		flex: 1;
-		max-width: 320px;
-		padding: 11px 18px;
+		max-width: 420px;
+		padding: 14px 22px;
 		border-radius: var(--ae-r-pill);
 		border: 1px solid var(--ae-line-strong);
 		background: var(--ae-card);
 		color: var(--ae-ink);
 		font-family: var(--ae-sans);
-		font-size: 15px;
+		font-size: 16px;
 	}
 
 	.ae-guide-chips {
@@ -1088,13 +1125,13 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 	}
 
 	.ae-guide-chip {
-		padding: 8px 14px;
+		padding: 11px 18px;
 		border-radius: 999px;
 		border: 1px solid var(--ae-line);
 		background: var(--ae-card);
 		color: var(--ae-ink);
 		font-family: var(--ae-sans);
-		font-size: 13px;
+		font-size: 14.5px;
 		line-height: 1.4;
 		text-align: left;
 		cursor: pointer;
@@ -1458,17 +1495,17 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 
 	.ae-guide-input {
 		flex: 1;
-		padding: 16px 20px;
-		border-radius: var(--ae-r-tile);
+		padding: 22px 26px;
+		border-radius: var(--ae-r-card);
 		border: 1px solid var(--ae-line-strong);
 		/* Card, not ground: on dark the page and the input were the same
 		   colour, so the box read as a hole rather than a field. */
 		background: var(--ae-card);
 		color: var(--ae-ink);
 		font-family: var(--ae-sans);
-		font-size: 17px;
-		line-height: 1.5;
-		min-height: 104px;
+		font-size: 19px;
+		line-height: 1.55;
+		min-height: 168px;
 		resize: vertical;
 	}
 
