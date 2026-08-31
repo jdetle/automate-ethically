@@ -13,7 +13,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 ---
 
 <Page
-	title="Talk it through — Automate Ethically"
+	title="Talk it through | Automate Ethically"
 	description="A conversation about what's organizing near you, and how your own skills fit in."
 	ogImage="/og/guide.png"
 >
@@ -23,7 +23,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 			<!-- DRAFT: rewrite — copy task 27: /guide framing -->
 			<h1 id="guide-title">What's organizing near you, and where you fit.</h1>
 			<p class="ae-hero-sub">
-				Tell it your town and what you're good at — it'll look for what's
+				Tell it your town and what you're good at, and it'll look for what's
 				actually happening there and think through it with you. It searches
 				the live web for real, current information; it won't invent a group
 				or a meeting that doesn't exist, and it says so when it can't find
@@ -76,7 +76,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 
 			<div class="ae-guide-verify" id="guide-verify" hidden>
 				<p class="ae-guide-verify-hint">
-					One quick check before you can send anything — a box appears below
+					One quick check before you can send anything. A box appears below
 					only if Cloudflare decides it needs to see you click it.
 				</p>
 				<div id="guide-turnstile" data-sitekey={turnstileSiteKey}></div>
@@ -108,7 +108,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 							<strong>What you type</strong>, plus the earlier turns of this
 							conversation, to this site's server, and from there to
 							<strong>Anthropic</strong> (the model is <code>claude-opus-5</code>).
-							Held in your tab's memory only — closing the tab ends it.
+							Held in your tab's memory only. Closing the tab ends it.
 						</li>
 						<li>
 							<strong>Your IP address</strong>, unavoidably, as with any web
@@ -119,7 +119,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 						</li>
 						<li>
 							<strong>A human-verification check</strong> to
-							<strong>Cloudflare Turnstile</strong>, once per session — not
+							<strong>Cloudflare Turnstile</strong>, once per session, not
 							once per message. It exists so an automated script can't run up
 							a bill on a movement site.
 						</li>
@@ -132,7 +132,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 							<strong>Whatever the guide searches for.</strong> When it looks
 							something up, the search terms it chose reach a web-search
 							provider through Anthropic. Every reply that used a search shows
-							you the exact queries and the sites it read — expand
+							you the exact queries and the sites it read. Expand
 							"what this answer is based on" under any reply.
 						</li>
 					</ul>
@@ -401,7 +401,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 			await ensureSession();
 			if (status) status.textContent = "Ready when you are.";
 		} catch {
-			if (status) status.textContent = "Couldn't verify you're human — reload the page to try again.";
+			if (status) status.textContent = "Couldn't verify you're human. Reload the page to try again.";
 			return;
 		}
 		if (input) {
@@ -419,7 +419,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 	const PROMPT_TEMPLATES = [
 		(place: string) => `What's organizing around ${place} right now?`,
 		(place: string) => `Is ${place}'s city council discussing AI, surveillance, or automated decisions?`,
-		(place: string) => `I live near ${place} — where should I start?`,
+		(place: string) => `I live near ${place}. Where should I start?`,
 		(place: string) => `Are there local groups near ${place} already working on this?`,
 		(place: string) => `What does the state-level landscape look like for ${place}?`,
 	];
@@ -685,12 +685,12 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 			// kind of thing a reader should be able to weigh.
 			trace.innerHTML = "";
 			const summary = document.createElement("summary");
-			summary.textContent = "No web search — answered from the model's own knowledge";
+			summary.textContent = "No web search: answered from the model's own knowledge";
 			trace.appendChild(summary);
 			const note = document.createElement("p");
 			note.className = "ae-guide-trace-note";
 			note.textContent =
-				"Nothing here was looked up live, so treat anything specific — a group, a meeting, a date — as unverified.";
+				"Nothing here was looked up live, so treat anything specific (a group, a meeting, a date) as unverified.";
 			trace.appendChild(note);
 			trace.hidden = false;
 			return;
@@ -699,7 +699,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 		trace.innerHTML = "";
 		const summary = document.createElement("summary");
 		const totalSites = new Set(searches.flatMap((entry) => entry.domains)).size;
-		summary.textContent = `What this answer is based on — ${searches.length} search${searches.length === 1 ? "" : "es"}, ${totalSites} site${totalSites === 1 ? "" : "s"}`;
+		summary.textContent = `What this answer is based on: ${searches.length} search${searches.length === 1 ? "" : "es"}, ${totalSites} site${totalSites === 1 ? "" : "s"}`;
 		trace.appendChild(summary);
 
 		const list = document.createElement("ol");
@@ -716,8 +716,8 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 			meta.className = "ae-guide-trace-meta";
 			meta.textContent =
 				entry.results === 0
-					? " — no results (that search failed or was cut off)"
-					: ` — ${entry.results} result${entry.results === 1 ? "" : "s"}`;
+					? ": no results (that search failed or was cut off)"
+					: `: ${entry.results} result${entry.results === 1 ? "" : "s"}`;
 			item.appendChild(meta);
 
 			if (entry.domains.length > 0) {
@@ -757,7 +757,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 			speakingBtn.type = "button";
 			speakingBtn.className = "ae-guide-turn-speaking";
 			speakingBtn.hidden = true;
-			speakingBtn.textContent = "🔊 Reading aloud — stop";
+			speakingBtn.textContent = "🔊 Reading aloud. Tap to stop";
 			speakingBtn.addEventListener("click", () => {
 				currentSpeech?.cancel();
 				currentSpeech = null;
@@ -819,7 +819,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 			try {
 				session = await ensureSession();
 			} catch {
-				replyP.textContent = "Couldn't verify you're human — reload the page and try again.";
+				replyP.textContent = "Couldn't verify you're human. Reload the page and try again.";
 				return; // the finally below settles `speech`
 			}
 
@@ -839,7 +839,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 				try {
 					res = await post(await ensureSession());
 				} catch {
-					replyP.textContent = "Couldn't verify you're human — reload the page and try again.";
+					replyP.textContent = "Couldn't verify you're human. Reload the page and try again.";
 					return;
 				}
 			}

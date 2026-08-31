@@ -12,9 +12,9 @@ import Stitch from "../components/ui/Stitch.astro";
 const toolkit = (await getCollection("toolkit")).sort((a, b) => a.data.order - b.data.order);
 
 const pages = [
-	{ href: "/", label: "Home — the argument" },
+	{ href: "/", label: "Home, and the argument" },
 	{ href: "/act", label: "Take action" },
-	{ href: "/pillars/organize", label: "Organize — pass the ordinance" },
+	{ href: "/pillars/organize", label: "Organize: pass the ordinance" },
 	{ href: "/toolkit", label: "The organizing toolkit" },
 	{ href: "/toolkit/one-pager", label: "The one-pager (print it)" },
 	...toolkit.map((d) => ({ href: `/toolkit/${d.id}`, label: d.data.title })),
@@ -26,13 +26,13 @@ const pages = [
 ---
 
 <Page
-	title="Search — Automate Ethically"
-	description="Search this site — the manifesto, the toolkit, everything."
+	title="Search | Automate Ethically"
+	description="Search this site: the manifesto, the toolkit, everything."
 >
 	<section class="ae-hero" aria-labelledby="search-title">
 		<Eyebrow tone="cobalt">Search</Eyebrow>
 		<h1 id="search-title">Find anything on this site.</h1>
-		<p class="ae-hero-sub">Type a word or two — a topic, a page name, anything you remember.</p>
+		<p class="ae-hero-sub">Type a word or two. A topic, a page name, anything you remember.</p>
 	</section>
 
 	<Stitch />
@@ -50,7 +50,7 @@ const pages = [
 			<div id="search-fallback" class="ae-search-fallback">
 				<p class="ae-search-fallback-note">
 					<noscript>Search needs JavaScript, and it isn't running here. </noscript>
-					Every page on the site is listed below — nothing is hidden behind the
+					Every page on the site is listed below. Nothing is hidden behind the
 					search box.
 				</p>
 				<ul class="ae-search-fallback-list">

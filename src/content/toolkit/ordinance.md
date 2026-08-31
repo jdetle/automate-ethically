@@ -1,6 +1,6 @@
 ---
 title: "A model ordinance"
-description: "A starting draft for your city council to work from — not legal advice, and not ready to pass as written."
+description: "A starting draft for your city council to work from. Not legal advice, and not ready to pass as written."
 updated: 2026-08-29
 printable: true
 legalReview: true
@@ -19,8 +19,8 @@ text."
 
 ## Findings and purpose
 
-Automated systems — camera networks, algorithms, software used by a city
-department — increasingly make or heavily influence decisions that affect
+Automated systems (camera networks, algorithms, software used by a city
+department) increasingly make or heavily influence decisions that affect
 residents' lives: who gets flagged, who gets denied, who gets watched. When
 no named person reviews these decisions, no one can be held accountable for
 them. This ordinance establishes that a person, not a system alone, must
@@ -70,7 +70,7 @@ provisions remain in full force and effect.
 ## Precedent
 
 Montana's HB 178 already requires human review of AI-driven decisions made
-by state agencies — this ordinance applies the same principle at the local
+by state agencies. This ordinance applies the same principle at the local
 level. See the [multistate.ai legislation tracker](https://www.multistate.ai/artificial-intelligence-ai-legislation)
 for the broader landscape.
 
@@ -81,5 +81,5 @@ for the broader landscape.
 - Check whether your city already has a similar disclosure or appeals
   process this could plug into, rather than duplicate.
 - Consider starting with a resolution (a statement of intent) if a full
-  ordinance feels like too large a first step — see
+  ordinance feels like too large a first step. See
   [what to say at your council meeting](/toolkit/council-script) either way.

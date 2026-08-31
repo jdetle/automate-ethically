@@ -1,6 +1,6 @@
 ---
 title: "Retraining, if you're leaving programming"
-description: "Real programs and honest caveats for developers whose jobs are being automated — not the coordination layer the front page promises, just where to start today."
+description: "Real programs and honest caveats for developers whose jobs are being automated. Not the coordination layer the front page promises, just where to start today."
 updated: 2026-08-30
 printable: false
 order: 6
@@ -26,14 +26,14 @@ wrong, tell us: [join@automate-ethically.com](mailto:join@automate-ethically.com
 ## Public programs with money attached
 
 - **[Trade Adjustment Assistance (TAA)](https://www.dol.gov/agencies/eta/tradeact)**
-  — a federal Department of Labor program offering training funds and income
+  is a federal Department of Labor program offering training funds and income
   support to workers who lost a job. Caveat, and it's an important one: TAA
   has historically covered job loss tied to import competition or
   offshoring. Whether AI-driven displacement qualifies is not settled and
-  varies by case — call your state's TAA office and ask directly rather
+  varies by case, so call your state's TAA office and ask directly rather
   than assume it applies to you.
 - **[Registered apprenticeships (apprenticeship.gov)](https://www.apprenticeship.gov)**
-  — the federal directory of paid-to-learn apprenticeships in nearly every
+  is the federal directory of paid-to-learn apprenticeships in nearly every
   state: electricians (IBEW), plumbers and pipefitters (UA), HVAC,
   carpentry. These pay a wage from day one, not tuition.
 
@@ -42,26 +42,26 @@ wrong, tell us: [join@automate-ethically.com](mailto:join@automate-ethically.com
 Leaving programming doesn't have to mean leaving tech-adjacent work
 entirely:
 
-- **[The Code She Writes — 20+ non-technical careers for software engineers](https://thecodeshewrites.com/2024/12/24/non-technical-careers-for-software-engineers/)**
-  and **[MakeUseOf — alternative career paths for developers](https://www.makeuseof.com/alternative-career-paths-software-developers/)**
-  — roundups of roles like technical writing, product management, UX
+- **[The Code She Writes: 20+ non-technical careers for software engineers](https://thecodeshewrites.com/2024/12/24/non-technical-careers-for-software-engineers/)**
+  and **[MakeUseOf: alternative career paths for developers](https://www.makeuseof.com/alternative-career-paths-software-developers/)**
+  are roundups of roles like technical writing, product management, UX
   research, and sales engineering that reuse a developer's background
   without daily coding.
 - **[opensource.com's jobs and careers collection](https://opensource.com/resources/open-source-jobs-and-careers)**
-  — documentation, community management, and other open source roles that
+  covers documentation, community management, and other open source roles that
   don't require writing new code every day, for people leaving the writing
   of code but not the ecosystem around it.
 
 ## Read before you pick a program
 
-- **[scale.jobs — AI job loss retraining programs, 2026](https://scale.jobs/blog/retraining-programs-for-ai-job-loss)**
-  — a current roundup of bootcamps and certificate programs. Read the
+- **[scale.jobs: AI job loss retraining programs, 2026](https://scale.jobs/blog/retraining-programs-for-ai-job-loss)**
+  is a current roundup of bootcamps and certificate programs. Read the
   placement-rate numbers in it as marketing from the programs themselves,
-  not an independent audit — we haven't verified any of them.
+  not an independent audit, and we haven't verified any of them.
 
 ## What we didn't find
 
-We looked for an open source *project* — software, not a program — built
+We looked for an open source *project* (software, not a program) built
 specifically to help programmers retrain. We didn't find one. That gap is
 closer to what the Retrain pillar is actually supposed to become, once it's
 more than a promise.

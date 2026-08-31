@@ -1,18 +1,17 @@
 <svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
-	<rect width="1200" height="630" fill="#f3efe6"/>
-	<g fill="#3b5386" opacity="0.14">
-		<circle cx="60" cy="60" r="6"/>
-		<circle cx="90" cy="60" r="6"/>
-		<circle cx="60" cy="90" r="6"/>
-		<circle cx="1140" cy="570" r="6"/>
-		<circle cx="1110" cy="570" r="6"/>
-		<circle cx="1140" cy="540" r="6"/>
+	<rect width="1200" height="630" fill="#f6f8fe"/>
+	<g stroke="#2b4bf2" stroke-width="1" opacity="0.07"><line x1="0" y1="0" x2="0" y2="630"/><line x1="60" y1="0" x2="60" y2="630"/><line x1="120" y1="0" x2="120" y2="630"/><line x1="180" y1="0" x2="180" y2="630"/><line x1="240" y1="0" x2="240" y2="630"/><line x1="300" y1="0" x2="300" y2="630"/><line x1="360" y1="0" x2="360" y2="630"/><line x1="420" y1="0" x2="420" y2="630"/><line x1="480" y1="0" x2="480" y2="630"/><line x1="540" y1="0" x2="540" y2="630"/><line x1="600" y1="0" x2="600" y2="630"/><line x1="660" y1="0" x2="660" y2="630"/><line x1="720" y1="0" x2="720" y2="630"/><line x1="780" y1="0" x2="780" y2="630"/><line x1="840" y1="0" x2="840" y2="630"/><line x1="900" y1="0" x2="900" y2="630"/><line x1="960" y1="0" x2="960" y2="630"/><line x1="1020" y1="0" x2="1020" y2="630"/><line x1="1080" y1="0" x2="1080" y2="630"/><line x1="1140" y1="0" x2="1140" y2="630"/><line x1="1200" y1="0" x2="1200" y2="630"/><line x1="0" y1="0" x2="1200" y2="0"/><line x1="0" y1="60" x2="1200" y2="60"/><line x1="0" y1="120" x2="1200" y2="120"/><line x1="0" y1="180" x2="1200" y2="180"/><line x1="0" y1="240" x2="1200" y2="240"/><line x1="0" y1="300" x2="1200" y2="300"/><line x1="0" y1="360" x2="1200" y2="360"/><line x1="0" y1="420" x2="1200" y2="420"/><line x1="0" y1="480" x2="1200" y2="480"/><line x1="0" y1="540" x2="1200" y2="540"/><line x1="0" y1="600" x2="1200" y2="600"/></g>
+	<g stroke="#2b4bf2" stroke-width="3" stroke-linecap="round">
+		<circle cx="72" cy="96" r="5" fill="#2b4bf2" stroke="none"/>
+		<line x1="86" y1="96" x2="1114" y2="96" stroke-dasharray="16 12"/>
+		<circle cx="1128" cy="96" r="5" fill="#2b4bf2" stroke="none"/>
 	</g>
-	<text x="120" y="230" font-family="Georgia, 'Iowan Old Style', serif" font-style="italic" font-size="40" fill="#232a38">The loom did not remove</text>
-	<text x="120" y="288" font-family="Georgia, 'Iowan Old Style', serif" font-style="italic" font-size="40" fill="#232a38">the weaver. A person still</text>
-	<text x="120" y="346" font-family="Georgia, 'Iowan Old Style', serif" font-style="italic" font-size="40" fill="#232a38">chose the pattern, punched</text>
-	<text x="120" y="404" font-family="Georgia, 'Iowan Old Style', serif" font-style="italic" font-size="40" fill="#232a38">the cards, examined the</text>
-	<text x="120" y="462" font-family="Georgia, 'Iowan Old Style', serif" font-style="italic" font-size="40" fill="#232a38">cloth, and signed the bolt.</text>
-	<text x="120" y="520" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="20" letter-spacing="1" fill="#a04338">JACQUARD, 1804</text>
-	<text x="120" y="580" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="22" fill="#5b6474">automate-ethically.com</text>
+	<text x="600" y="240" text-anchor="middle" font-family="Space Grotesk" font-size="66" font-weight="700" fill="#101733" letter-spacing="-1.5">The loom did not</text><text x="600" y="322" text-anchor="middle" font-family="Space Grotesk" font-size="66" font-weight="700" fill="#101733" letter-spacing="-1.5">remove the weaver.</text>
+	<text x="600" y="390" text-anchor="middle" font-family="DM Sans" font-size="24" fill="#5b6474">A person chose the pattern, punched the cards, and signed the bolt. 1804.</text>
+	<g stroke="#2b4bf2" stroke-width="3" stroke-linecap="round">
+		<circle cx="72" cy="534" r="5" fill="#2b4bf2" stroke="none"/>
+		<line x1="86" y1="534" x2="1114" y2="534" stroke-dasharray="16 12"/>
+		<circle cx="1128" cy="534" r="5" fill="#2b4bf2" stroke="none"/>
+	</g>
+	<text x="600" y="582" text-anchor="middle" font-family="DM Sans" font-size="24" fill="#5b6474">automate-ethically.com</text>
 </svg>
