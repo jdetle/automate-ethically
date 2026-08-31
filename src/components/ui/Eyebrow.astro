@@ -1,0 +1,41 @@
+---
+/*
+ * The small caps label above a heading. Coral when the section asks something
+ * of you, cobalt when it tells you something. Never gold.
+ */
+interface Props {
+	tone?: "coral" | "cobalt" | "ink";
+	class?: string;
+}
+
+const { tone = "cobalt", class: klass } = Astro.props;
+---
+
+<p class:list={["ae-eyebrow", `ae-eyebrow--${tone}`, klass]}><slot /></p>
+
+<style>
+	.ae-eyebrow {
+		margin: 0 0 1.1rem;
+		font-family: var(--ae-sans);
+		font-weight: 700;
+		font-size: var(--ae-fs-eyebrow);
+		letter-spacing: var(--ae-tracking-eyebrow);
+		text-transform: uppercase;
+	}
+
+	.ae-eyebrow--coral {
+		color: var(--ae-coral-ink);
+	}
+
+	.ae-eyebrow--cobalt {
+		color: var(--ae-cobalt);
+	}
+
+	.ae-eyebrow--ink {
+		color: var(--ae-faint);
+	}
+
+	.ae-eyebrow :global(a) {
+		color: inherit;
+	}
+</style>

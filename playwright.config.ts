@@ -5,6 +5,9 @@ const BASE_URL = `http://127.0.0.1:${PORT}`;
 
 export default defineConfig({
 	testDir: "./tests",
+	// tests/unit is Vitest's (component rendering via the Astro Container
+	// API); Playwright would try to run those files as browser specs.
+	testIgnore: "**/unit/**",
 	fullyParallel: false,
 	retries: 0,
 	reporter: "list",

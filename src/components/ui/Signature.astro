@@ -1,0 +1,42 @@
+---
+/*
+ * The one legal use of gold on this site.
+ *
+ * A Signature marks a named human taking responsibility for something — an
+ * approval, a sign-off, a person whose name is on a town's page. If what you
+ * are marking is not a person accepting accountability, this is the wrong
+ * component and gold is the wrong colour; use Chip or Callout instead.
+ */
+interface Props {
+	/** The person, or the standing commitment that a person signs. */
+	name: string;
+	class?: string;
+}
+
+const { name, class: klass } = Astro.props;
+---
+
+<p class:list={["ae-signature", klass]}>
+	<slot />
+	<span class="ae-signature-name">{name}</span>
+</p>
+
+<style>
+	.ae-signature {
+		margin: 0;
+		font-size: var(--ae-fs-small);
+		line-height: 1.5;
+		color: var(--ae-muted);
+	}
+
+	.ae-signature-name {
+		display: inline-block;
+		margin-top: 0.5rem;
+		font-family: var(--ae-display);
+		font-style: italic;
+		font-size: 1rem;
+		color: var(--ae-gold-ink);
+		border-bottom: 2px solid var(--ae-gold);
+		padding: 0 1.6rem 2px 2px;
+	}
+</style>

@@ -1,6 +1,8 @@
 ---
 import QRCode from "qrcode";
 import Page from "../../layouts/Page.astro";
+import Eyebrow from "../../components/ui/Eyebrow.astro";
+import Stitch from "../../components/ui/Stitch.astro";
 
 // Generated once at build time — no client JS, no external QR service. If
 // the destination URL ever changes, this regenerates automatically on the
@@ -9,17 +11,44 @@ const actionUrl = "https://automate-ethically.com/act?source=one-pager-qr";
 const qrSvg = await QRCode.toString(actionUrl, {
 	type: "svg",
 	margin: 0,
-	color: { dark: "#232a38", light: "#00000000" },
+	color: { dark: "#101733", light: "#00000000" },
 });
 const updatedLabel = "August 29, 2026";
+
+// The three figures, in the compressed form the printed sheet uses: bare
+// domain rather than a full citation line, because a URL on paper has to be
+// typeable. The full sources stay on /facts.
+const figures = [
+	{
+		value: "6,000",
+		label: "communities under one company's plate cameras",
+		src: "ipm.org · Stateline, Aug 2026",
+	},
+	{
+		value: "426 TWh",
+		label: "projected US data-center electricity by 2030",
+		src: "iea.org · Energy and AI",
+	},
+	{
+		value: "1,561",
+		label: "AI bills introduced in 45 states this session",
+		src: "multistate.ai · AI legislation tracker",
+	},
+];
+
+const steps = [
+	{ time: "30 seconds", text: "sign the petition at automate-ethically.com" },
+	{ time: "5 minutes", text: "print this page and pin it somewhere people wait" },
+	{ time: "10–20 minutes", text: "read the two-minute script at your next council meeting" },
+];
 ---
 
 <Page
 	title="The one-pager — Automate Ethically"
 	description="The whole argument on one printed sheet. Print it, pin it up, hand it to a neighbor."
 >
-	<section class="ae-hero ae-printable" aria-labelledby="op-title">
-		<p class="ae-eyebrow"><a href="/toolkit">&larr; The toolkit</a></p>
+	<section class="ae-hero ae-print-hide" aria-labelledby="op-title">
+		<Eyebrow tone="cobalt"><a href="/toolkit">&larr; The toolkit</a></Eyebrow>
 		<h1 id="op-title">The one-pager</h1>
 		<p class="ae-hero-sub">
 			A broadside was made to be nailed up. Print this page — <strong>File,
@@ -28,51 +57,273 @@ const updatedLabel = "August 29, 2026";
 		</p>
 	</section>
 
-	<section class="ae-section ae-onepager ae-printable" aria-label="Printable one-pager">
-		<div class="ae-container ae-onepager-sheet">
-			<!-- DRAFT: rewrite — copy task 17: one-pager full text (voice-critical) -->
-			<p class="ae-eyebrow">automate ethically</p>
-			<h2 class="ae-h2">A human makes the decision, and answers for it.</h2>
-			<p class="ae-prose">
-				Cameras watch your street. Machines answer your insurance claim. Data
-				centers rise at the edge of town. None of them can be held
-				accountable — only a person can.
+	<Stitch class="ae-print-hide" />
+
+	<section class="ae-sheet-wrap ae-printable" aria-label="Printable one-pager">
+		<!-- DRAFT: rewrite — copy task 17: one-pager full text (voice-critical) -->
+		<article class="ae-sheet">
+			<header class="ae-sheet-head">
+				<span class="ae-sheet-mark">Automate, Ethically.</span>
+				<span class="ae-sheet-kind">a broadside · print &amp; pin</span>
+			</header>
+
+			<h2 class="ae-sheet-title">A human makes the decision.</h2>
+			<p class="ae-sheet-lede">
+				Cameras on your street. Machines answering insurance claims. Data
+				centers at the edge of town. None of them can be held accountable. A
+				person can. Wherever an automated system touches your life, a human
+				should make the decision — and answer for it.
 			</p>
-			<figure class="ae-epigraph">
-				<blockquote>
-					The loom did not remove the weaver. A person still chose the
-					pattern, punched the cards, examined the cloth, and signed the bolt.
-				</blockquote>
-				<figcaption>jacquard, 1804</figcaption>
-			</figure>
 
-			<div class="ae-stats ae-stats--compact">
-				<div class="ae-stat">
-					<span class="ae-stat-num">6,000</span>
-					<span class="ae-stat-label">communities watched by one company's license-plate cameras</span>
-					<span class="ae-stat-src"><a href="https://www.ipm.org/news/2026-08-17/flock-safety-tightens-safeguards-as-states-cities-question-surveillance-network">Stateline</a>, Aug 2026</span>
-				</div>
-				<div class="ae-stat">
-					<span class="ae-stat-num">426&thinsp;TWh</span>
-					<span class="ae-stat-label">projected US data-center electricity by 2030</span>
-					<span class="ae-stat-src"><a href="https://www.iea.org/reports/energy-and-ai/energy-demand-from-ai">IEA</a>, Energy and AI</span>
-				</div>
-				<div class="ae-stat">
-					<span class="ae-stat-num">1,561</span>
-					<span class="ae-stat-label">AI bills introduced in 45 states this session</span>
-					<span class="ae-stat-src"><a href="https://www.multistate.ai/artificial-intelligence-ai-legislation">multistate.ai</a>, Mar 2026</span>
-				</div>
+			<div class="ae-sheet-figures">
+				{
+					figures.map((f) => (
+						<div class="ae-sheet-figure">
+							<span class="ae-sheet-figure-value">{f.value}</span>
+							<span class="ae-sheet-figure-label">{f.label}</span>
+							<span class="ae-sheet-figure-src">{f.src}</span>
+						</div>
+					))
+				}
 			</div>
 
-			<p class="ae-plain">Your town writes these rules this year. Be in the room.</p>
-
-			<div class="ae-onepager-footer">
-				<div class="ae-onepager-qr" set:html={qrSvg} />
-				<div>
-					<p class="ae-aside"><strong>automate-ethically.com/act</strong></p>
-					<p class="ae-aside">Facts checked {updatedLabel}. Sources and our correction policy: automate-ethically.com/facts</p>
-				</div>
+			<div class="ae-sheet-steps">
+				<p class="ae-sheet-steps-kicker">This week, pick one</p>
+				<ul>
+					{
+						steps.map((s) => (
+							<li>
+								<span class="ae-sheet-box" aria-hidden="true" />
+								<span>
+									<strong>{s.time}</strong> — {s.text}
+								</span>
+							</li>
+						))
+					}
+				</ul>
 			</div>
-		</div>
+
+			<footer class="ae-sheet-foot">
+				<svg class="ae-sheet-stitch" viewBox="0 0 680 14" preserveAspectRatio="none" aria-hidden="true">
+					<circle cx="6" cy="7" r="3.5" fill="currentColor"></circle>
+					<line x1="14" y1="7" x2="666" y2="7" stroke="currentColor" stroke-width="2.5" stroke-dasharray="11 8"></line>
+					<circle cx="674" cy="7" r="3.5" fill="currentColor"></circle>
+				</svg>
+				<div class="ae-sheet-foot-row">
+					<div class="ae-sheet-qr" set:html={qrSvg} />
+					<span class="ae-sheet-url">automate-ethically.com</span>
+					<span class="ae-sheet-fine">
+						No political committee exists. Nothing here asks for money. The loom
+						did not remove the weaver, 1804. Facts checked {updatedLabel} —
+						sources at automate-ethically.com/facts
+					</span>
+				</div>
+			</footer>
+		</article>
 	</section>
 </Page>
+
+<style>
+	.ae-sheet-wrap {
+		padding: 0 var(--ae-gutter) clamp(3rem, 2rem + 3vw, 4.5rem);
+		max-width: var(--ae-max-page);
+		margin: 0 auto;
+	}
+
+	/*
+	 * On screen this is a preview of a sheet of Letter, so it keeps the paper
+	 * proportion and a border. In print the border and the fixed width both go
+	 * away and it becomes the page itself.
+	 */
+	.ae-sheet {
+		max-width: 816px;
+		margin: 0 auto;
+		background: var(--ae-card);
+		color: var(--ae-ink);
+		border: 1px solid var(--ae-line);
+		border-radius: 6px;
+		padding: clamp(2rem, 1rem + 4vw, 4rem) clamp(1.5rem, 0.8rem + 3.6vw, 4.25rem);
+		display: flex;
+		flex-direction: column;
+	}
+
+	.ae-sheet-head {
+		display: flex;
+		justify-content: space-between;
+		align-items: baseline;
+		gap: 1rem;
+		flex-wrap: wrap;
+		border-top: 5px solid var(--ae-ink);
+		padding-top: 14px;
+	}
+
+	.ae-sheet-mark {
+		font-family: var(--ae-display);
+		font-weight: 700;
+		font-size: 0.75rem;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+	}
+
+	.ae-sheet-kind {
+		font-family: var(--ae-mono);
+		font-size: 0.688rem;
+		color: var(--ae-faint);
+	}
+
+	.ae-sheet-title {
+		margin: clamp(1.75rem, 1rem + 3vw, 3.25rem) 0 0;
+		font-family: var(--ae-display);
+		font-weight: 700;
+		font-size: clamp(2.25rem, 1.1rem + 5vw, 3.875rem);
+		line-height: 1;
+		letter-spacing: -0.015em;
+	}
+
+	.ae-sheet-lede {
+		margin: 26px 0 0;
+		font-size: var(--ae-fs-body);
+		line-height: 1.6;
+		max-width: 600px;
+	}
+
+	.ae-sheet-figures {
+		display: flex;
+		gap: 36px;
+		flex-wrap: wrap;
+		margin: 44px 0 0;
+		padding: 22px 0;
+		border-top: 1px solid var(--ae-line);
+		border-bottom: 1px solid var(--ae-line);
+	}
+
+	.ae-sheet-figure {
+		flex: 1 1 180px;
+	}
+
+	.ae-sheet-figure-value {
+		display: block;
+		font-family: var(--ae-display);
+		font-weight: 700;
+		font-size: 2.375rem;
+		line-height: 1;
+	}
+
+	.ae-sheet-figure-label {
+		display: block;
+		margin: 6px 0 4px;
+		font-size: 0.781rem;
+		line-height: 1.45;
+	}
+
+	.ae-sheet-figure-src {
+		display: block;
+		font-family: var(--ae-mono);
+		font-size: 0.656rem;
+		color: var(--ae-faint);
+	}
+
+	.ae-sheet-steps {
+		margin: 40px 0 0;
+	}
+
+	.ae-sheet-steps-kicker {
+		margin: 0 0 16px;
+		font-family: var(--ae-sans);
+		font-weight: 700;
+		font-size: 0.75rem;
+		letter-spacing: 0.18em;
+		text-transform: uppercase;
+		color: var(--ae-coral-ink);
+	}
+
+	.ae-sheet-steps ul {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		font-size: 0.938rem;
+		line-height: 1.5;
+	}
+
+	.ae-sheet-steps li {
+		display: flex;
+		gap: 12px;
+		align-items: baseline;
+	}
+
+	/* An empty box, not a checkmark: the reader is meant to tick one. */
+	.ae-sheet-box {
+		flex: none;
+		width: 13px;
+		height: 13px;
+		border: 2px solid var(--ae-ink);
+		position: relative;
+		top: 1px;
+	}
+
+	.ae-sheet-foot {
+		margin-top: clamp(2.5rem, 1.5rem + 4vw, 4.5rem);
+	}
+
+	.ae-sheet-stitch {
+		display: block;
+		width: 100%;
+		height: 14px;
+		color: var(--ae-coral);
+	}
+
+	.ae-sheet-foot-row {
+		display: flex;
+		align-items: center;
+		gap: 18px;
+		margin-top: 16px;
+		flex-wrap: wrap;
+	}
+
+	.ae-sheet-qr {
+		flex: none;
+		width: 76px;
+	}
+
+	.ae-sheet-qr :global(svg) {
+		display: block;
+		width: 100%;
+		height: auto;
+	}
+
+	.ae-sheet-url {
+		font-family: var(--ae-display);
+		font-weight: 700;
+		font-size: 1.375rem;
+	}
+
+	.ae-sheet-fine {
+		flex: 1 1 300px;
+		font-size: 0.656rem;
+		line-height: 1.5;
+		color: var(--ae-faint);
+		text-align: right;
+	}
+
+	@media print {
+		.ae-sheet-wrap {
+			padding: 0;
+			max-width: none;
+		}
+
+		.ae-sheet {
+			max-width: none;
+			border: 0;
+			border-radius: 0;
+			padding: 0;
+			min-height: 9.3in;
+		}
+
+		.ae-sheet-foot {
+			margin-top: auto;
+		}
+	}
+</style>

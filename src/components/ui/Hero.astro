@@ -1,0 +1,93 @@
+---
+import Eyebrow from "./Eyebrow.astro";
+import PunchChip from "./PunchChip.astro";
+import WeaveField from "./WeaveField.astro";
+
+/*
+ * The page opener. `display` sizing plus the ink-shift headline is reserved
+ * for the home page — one animated headline per page is the rule — so other
+ * pages pass size="h1" and leave `inkShift` off.
+ */
+interface Props {
+	eyebrow?: string;
+	eyebrowTone?: "coral" | "cobalt" | "ink";
+	title: string;
+	size?: "display" | "h1";
+	/** The ink-shift primitive. At most one headline per page may use it. */
+	inkShift?: boolean;
+	weave?: boolean;
+	chips?: boolean;
+	id?: string;
+	titleId?: string;
+}
+
+const {
+	eyebrow,
+	eyebrowTone = "coral",
+	title,
+	size = "h1",
+	inkShift = false,
+	weave = false,
+	chips = false,
+	id,
+	titleId,
+} = Astro.props;
+---
+
+<section class="ae-hero" id={id} aria-labelledby={titleId}>
+	{weave && <WeaveField />}
+	{
+		chips && (
+			<>
+				<PunchChip tone="sun" cols={4} rows={2} drift="a" top="60px" right="90px" width="120px" />
+				<PunchChip tone="coral" cols={3} rows={2} drift="b" top="230px" right="260px" width="86px" />
+			</>
+		)
+	}
+	<div class="ae-hero-inner">
+		{eyebrow && <Eyebrow tone={eyebrowTone}>{eyebrow}</Eyebrow>}
+		<h1
+			id={titleId}
+			class:list={["ae-hero-title", `ae-hero-title--${size}`, inkShift && "ae-ink-shift"]}
+		>
+			{title}
+		</h1>
+		<slot />
+	</div>
+</section>
+
+<style>
+	.ae-hero {
+		position: relative;
+		overflow: hidden;
+		padding: clamp(3.5rem, 2rem + 6vw, 6.5rem) var(--ae-gutter) clamp(3rem, 2rem + 4vw, 5.5rem);
+		max-width: var(--ae-max-page);
+		margin: 0 auto;
+	}
+
+	.ae-hero-inner {
+		position: relative;
+		z-index: 1;
+		max-width: 880px;
+	}
+
+	.ae-hero-title {
+		margin: 0;
+		font-family: var(--ae-display);
+		font-weight: 700;
+		line-height: 1.02;
+		letter-spacing: var(--ae-tracking-display);
+		/* The gradient is clipped to the glyphs; without this the descenders
+		   of an ink-shift headline get sheared off. */
+		padding-bottom: 0.06em;
+	}
+
+	.ae-hero-title--display {
+		font-size: var(--ae-fs-display);
+		line-height: 1;
+	}
+
+	.ae-hero-title--h1 {
+		font-size: var(--ae-fs-h1);
+	}
+</style>

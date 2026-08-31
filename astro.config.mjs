@@ -1,5 +1,6 @@
 import node from "@astrojs/node";
 import sitemap from "@astrojs/sitemap";
+import pagefindDev from "./integrations/pagefind-dev.mjs";
 import { defineConfig } from "astro/config";
 
 export default defineConfig({
@@ -8,7 +9,7 @@ export default defineConfig({
 	build: {
 		inlineStylesheets: "auto",
 	},
-	integrations: [sitemap()],
+	integrations: [sitemap(), pagefindDev()],
 	// Every page still prerenders to static HTML by default (output: "static"'s
 	// behavior is unchanged) — the adapter only exists so the one route that
 	// opts out via `export const prerender = false` (src/pages/api/guide.ts)

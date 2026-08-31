@@ -1,70 +1,147 @@
 /*
- * automate-ethically — the pamphlet nailed to the door.
+ * automate-ethically — v2 "pop".
  *
- * Sibling of jacquard (the mill floor, indigo denim, dark) and phantom-thread
- * (the atelier, parchment + lavender, light). This site is the civic broadside:
- * unbleached muslin printed with indigo ink, stitched with madder-red thread.
- * Dark mode is the same cloth dyed — it converges toward jacquard's denim.
+ * Turn 1 was cloth: unbleached muslin, indigo dye, madder thread. v2 keeps the
+ * argument and repaints the room — cool white ground, cobalt structure, coral
+ * for anything that asks you to act, sun yellow for the honest price tag on
+ * an action. Dark mode is the same stage with the lights on.
  *
- * The one rule that outranks aesthetics, inherited from jacquard: gold is a
- * human's hands and nothing else may wear it. If you need a warm accent, use
- * madder.
+ * The one rule that outranks aesthetics survives the repaint: gold marks human
+ * accountability and nothing else. A name, a signature, a sign-off. Sun yellow
+ * is the everyday highlight; gold is not. If you want a warm accent, use sun.
+ *
+ * Legacy aliases (--ae-paper / --ae-indigo / --ae-madder) are kept at the
+ * bottom of each block so surfaces not yet converted to the v2 components
+ * (chiefly /guide) repaint with the rest of the site instead of stranding on
+ * the old palette. They are aliases, not a second palette — never add a new
+ * rule against them.
  */
 
 :root {
 	color-scheme: light dark;
 
-	/* ground — unbleached muslin */
-	--ae-paper: #f3efe6;
-	--ae-paper-2: #e9e3d5;
-	--ae-ink: #232a38;
-	--ae-muted: #5b6474;
-	--ae-line: rgba(35, 42, 56, 0.16);
-	--ae-line-soft: rgba(35, 42, 56, 0.09);
-	--ae-line-strong: rgba(35, 42, 56, 0.26);
-	--ae-card: rgba(255, 255, 255, 0.5);
-	--ae-shadow: rgba(35, 42, 56, 0.14);
+	/* ground — cool white */
+	--ae-ground: #f6f8fe;
+	--ae-ground-2: #edf1fc;
+	--ae-ink: #101733;
+	--ae-muted: rgba(16, 23, 51, 0.7);
+	--ae-faint: rgba(16, 23, 51, 0.55);
+	--ae-card: #ffffff;
+	--ae-line: rgba(16, 23, 51, 0.12);
+	--ae-line-soft: rgba(16, 23, 51, 0.08);
+	--ae-line-strong: rgba(16, 23, 51, 0.3);
+	--ae-shadow: rgba(16, 23, 51, 0.14);
+	--ae-shadow-cast: rgba(43, 75, 242, 0.08);
 
-	/* indigo — the dye; links and primary structure */
-	--ae-indigo: #3b5386;
-	--ae-indigo-ink: #32456f;
-	--ae-indigo-wash: rgba(59, 83, 134, 0.1);
+	/* cobalt — links and structure */
+	--ae-cobalt: #2b4bf2;
+	--ae-cobalt-ink: #2039c9;
+	--ae-cobalt-wash: rgba(43, 75, 242, 0.08);
 
-	/* madder — the movement's thread; CTAs, chips, stitch dividers */
-	--ae-madder: #a04338;
-	--ae-madder-wash: rgba(160, 67, 56, 0.1);
+	/* coral — CTAs, chips, stitches; anything that asks you to act */
+	--ae-coral: #ff5440;
+	--ae-coral-ink: #e03a26;
+	--ae-coral-wash: rgba(255, 84, 64, 0.06);
 
-	/* RESERVED — gold is a human's hands, nothing else wears it */
-	--ae-gold: #8a6d24;
-	--ae-gold-wash: rgba(184, 148, 58, 0.14);
+	/* sun — highlights and time chips. The everyday warm. */
+	--ae-sun: #ffc531;
+	--ae-sun-wash: rgba(255, 197, 49, 0.16);
 
-	--ae-serif: "Source Serif 4 Variable", "Iowan Old Style", Georgia, serif;
-	--ae-sans: system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+	/* RESERVED — gold is human accountability, nothing else wears it */
+	--ae-gold: #d99a1f;
+	--ae-gold-ink: #b07607;
+	--ae-gold-wash: rgba(217, 154, 31, 0.12);
+
+	/* ink that sits on a saturated fill */
+	--ae-on-cobalt: #ffffff;
+	--ae-on-coral: #ffffff;
+	--ae-on-sun: #101733;
+
+	/* the weave: the grid behind hero grounds */
+	--ae-weave: rgba(43, 75, 242, 0.13);
+
+	/* type */
+	--ae-display: "Space Grotesk Variable", "Space Grotesk", system-ui, sans-serif;
+	--ae-sans: "DM Sans Variable", "DM Sans", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
 	--ae-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-	--ae-tracking-eyebrow: 0.16em;
-	--ae-tracking-chip: 0.13em;
-	--ae-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+
+	/* type scale — artboard sizes are the ceiling, they scale down on phones */
+	--ae-fs-display: clamp(2.75rem, 1.2rem + 7.6vw, 5.5rem); /* 44 → 88 */
+	--ae-fs-h1: clamp(2.25rem, 1.4rem + 4.2vw, 3.75rem); /* 36 → 60 */
+	--ae-fs-h2: clamp(1.6rem, 1.15rem + 2.2vw, 2rem); /* 26 → 32 */
+	--ae-fs-h3: clamp(1.15rem, 1rem + 0.8vw, 1.3rem);
+	--ae-fs-lede: clamp(1.05rem, 0.9rem + 0.9vw, 1.25rem); /* 17 → 20 */
+	--ae-fs-body: 1.03rem; /* 16.5 */
+	--ae-fs-small: 0.875rem;
+	--ae-fs-meta: 0.78rem; /* 12.5 */
+	--ae-fs-eyebrow: 0.688rem; /* 11 */
+
+	--ae-tracking-eyebrow: 0.18em;
+	--ae-tracking-chip: 0.08em;
+	--ae-tracking-display: -0.02em;
+
+	/* shape */
+	--ae-r-card: 18px;
+	--ae-r-tile: 14px;
+	--ae-r-panel: 16px;
+	--ae-r-pill: 999px;
+
+	/* rhythm */
+	--ae-gutter: clamp(1.25rem, 0.6rem + 3vw, 3.5rem);
 	--ae-max-text: 68ch;
+	--ae-max-page: 1280px;
+
+	/* motion */
+	--ae-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+	--ae-dur-lift: 250ms;
+
+	/* --- legacy aliases: v1 names, v2 values (see header note) --- */
+	--ae-paper: var(--ae-ground);
+	--ae-paper-2: var(--ae-ground-2);
+	--ae-indigo: var(--ae-cobalt);
+	--ae-indigo-ink: var(--ae-cobalt-ink);
+	--ae-indigo-wash: var(--ae-cobalt-wash);
+	--ae-madder: var(--ae-coral);
+	--ae-madder-wash: var(--ae-coral-wash);
+	--ae-serif: var(--ae-display);
+	--ae-tracking-chip-legacy: var(--ae-tracking-chip);
 }
 
 @media (prefers-color-scheme: dark) {
 	:root {
-		/* the same cloth, dyed — converges toward jacquard's denim */
-		--ae-paper: #131c2b;
-		--ae-paper-2: #0e1522;
-		--ae-ink: #eae5da;
-		--ae-muted: #98a3b5;
-		--ae-line: rgba(210, 220, 236, 0.14);
-		--ae-line-soft: rgba(210, 220, 236, 0.08);
-		--ae-line-strong: rgba(210, 220, 236, 0.24);
-		--ae-card: rgba(210, 220, 236, 0.05);
-		--ae-shadow: rgba(0, 0, 0, 0.4);
-		--ae-indigo: #8aa6e0;
-		--ae-indigo-ink: #a3bbec;
-		--ae-indigo-wash: rgba(138, 166, 224, 0.12);
-		--ae-madder: #d98a7c;
-		--ae-madder-wash: rgba(217, 138, 124, 0.1);
-		--ae-gold: #e4c06d;
-		--ae-gold-wash: rgba(228, 192, 109, 0.13);
+		/* stage lights on — same energy, deeper room */
+		--ae-ground: #0b1230;
+		--ae-ground-2: #070d24;
+		--ae-ink: #eef1ff;
+		--ae-muted: rgba(238, 241, 255, 0.7);
+		--ae-faint: rgba(238, 241, 255, 0.55);
+		--ae-card: #151d42;
+		--ae-line: rgba(238, 241, 255, 0.14);
+		--ae-line-soft: rgba(238, 241, 255, 0.08);
+		--ae-line-strong: rgba(238, 241, 255, 0.3);
+		--ae-shadow: rgba(0, 0, 0, 0.45);
+		--ae-shadow-cast: rgba(0, 0, 0, 0.4);
+
+		--ae-cobalt: #7d93ff;
+		--ae-cobalt-ink: #9db0ff;
+		--ae-cobalt-wash: rgba(125, 147, 255, 0.12);
+
+		--ae-coral: #ff8a7a;
+		--ae-coral-ink: #ffa294;
+		--ae-coral-wash: rgba(255, 138, 122, 0.1);
+
+		--ae-sun: #ffd469;
+		--ae-sun-wash: rgba(255, 212, 105, 0.14);
+
+		--ae-gold: #f0be55;
+		--ae-gold-ink: #f0be55;
+		--ae-gold-wash: rgba(240, 190, 85, 0.13);
+
+		/* the dark accents are light enough that navy ink reads on all three */
+		--ae-on-cobalt: #0b1230;
+		--ae-on-coral: #0b1230;
+		--ae-on-sun: #0b1230;
+
+		--ae-weave: rgba(125, 147, 255, 0.12);
 	}
 }

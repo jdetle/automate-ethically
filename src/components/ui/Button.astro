@@ -1,0 +1,79 @@
+---
+/*
+ * Primary = coral fill, the thing we actually want you to do. Secondary =
+ * cobalt outline, the thing you read first if you're not ready yet. There is
+ * no third button; if something needs less weight than secondary it is a link.
+ *
+ * Renders <a> when given an href and <button> otherwise, so a real action and
+ * a navigation never have to pretend to be each other.
+ */
+interface Props {
+	href?: string;
+	variant?: "primary" | "secondary";
+	size?: "md" | "sm";
+	type?: "button" | "submit" | "reset";
+	class?: string;
+	[key: string]: unknown;
+}
+
+const { href, variant = "primary", size = "md", class: klass, ...rest } = Astro.props;
+const Tag = href ? "a" : "button";
+---
+
+<Tag
+	href={href}
+	class:list={["ae-btn", `ae-btn--${variant}`, `ae-btn--${size}`, "ae-lift", klass]}
+	{...rest}
+>
+	<slot />
+</Tag>
+
+<style>
+	.ae-btn {
+		display: inline-block;
+		font-family: var(--ae-display);
+		font-weight: 700;
+		font-size: 0.94rem;
+		line-height: 1.15;
+		border-radius: var(--ae-r-pill);
+		text-decoration: none;
+		cursor: pointer;
+		border: 2px solid transparent;
+		text-align: center;
+	}
+
+	.ae-btn--sm {
+		font-size: 0.82rem;
+	}
+
+	.ae-btn--primary {
+		background: var(--ae-coral);
+		color: var(--ae-on-coral);
+		padding: 15px 28px;
+	}
+
+	.ae-btn--primary.ae-btn--sm {
+		padding: 11px 20px;
+	}
+
+	.ae-btn--secondary {
+		background: transparent;
+		border-color: var(--ae-cobalt);
+		color: var(--ae-cobalt);
+		padding: 13px 28px;
+	}
+
+	.ae-btn--secondary.ae-btn--sm {
+		padding: 9px 20px;
+	}
+
+	.ae-btn--primary:hover {
+		background: var(--ae-coral-ink);
+		color: var(--ae-on-coral);
+	}
+
+	.ae-btn--secondary:hover {
+		background: var(--ae-cobalt-wash);
+		color: var(--ae-cobalt);
+	}
+</style>

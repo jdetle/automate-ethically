@@ -2,8 +2,11 @@
 ---
 
 <footer class="ae-footer">
-	<div class="ae-footer-inner">
-		<span>&copy; 2026 John Detlefs &middot; <a href="https://jdetle.com">jdetle.com</a></span>
+	<div class="ae-footer-row">
+		<p class="ae-footer-claim">
+			No political committee exists. Nothing on this site asks for money. This
+			page ran no JavaScript to show you this.
+		</p>
 		<nav class="ae-footer-nav" aria-label="More">
 			<a href="/act">Act</a>
 			<a href="/toolkit">Toolkit</a>
@@ -11,20 +14,89 @@
 			<a href="/facts">Facts</a>
 			<a href="/about">About</a>
 		</nav>
-		<span class="ae-footer-sign">&hellip;and signed the bolt.</span>
+		<span class="ae-footer-mark">automate-ethically.com</span>
 	</div>
-	<div class="ae-footer-inner ae-footer-inner--quiet">
-		<span>
-			We track how this site performs — which pages get read, roughly how
-			many people visit — on our own infrastructure, with no third-party
-			trackers and no cookies. Anything that could identify you (a
-			persistent ID, anything typed into a form) is never collected in the
-			first place, or is stripped before it's stored. Nothing follows you
-			off this page. A few pages (like search) run a small, self-hosted
-			script to work — never anything from a third party. One page
-			(<a href="/guide">the guide</a>) makes a one-time, disclosed use of
-			your IP address to guess your general area — never stored, never
-			logged, and you can just tell it a different place.
-		</span>
+	<div class="ae-footer-row ae-footer-row--quiet">
+		<p>
+			We track how this site performs — which pages get read, roughly how many
+			people visit — on our own infrastructure, with no third-party trackers
+			and no cookies. Anything that could identify you (a persistent ID,
+			anything typed into a form) is never collected in the first place, or is
+			stripped before it's stored. Nothing follows you off this page. A few
+			pages (like search) run a small, self-hosted script to work — never
+			anything from a third party. One page (<a href="/guide">the guide</a>)
+			makes a one-time, disclosed use of your IP address to guess your general
+			area — never stored, never logged, and you can just tell it a different
+			place.
+		</p>
+		<p class="ae-footer-sign">
+			&copy; 2026 John Detlefs &middot; <a href="https://jdetle.com">jdetle.com</a>
+			&middot; &hellip;and signed the bolt.
+		</p>
 	</div>
 </footer>
+
+<style>
+	.ae-footer {
+		border-top: 1px solid var(--ae-line);
+		padding: 26px var(--ae-gutter) 34px;
+		max-width: var(--ae-max-page);
+		margin: 0 auto;
+		font-size: var(--ae-fs-meta);
+		color: var(--ae-muted);
+	}
+
+	.ae-footer-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: baseline;
+		gap: 1.5rem;
+		flex-wrap: wrap;
+	}
+
+	.ae-footer-claim {
+		margin: 0;
+		max-width: 42ch;
+		line-height: 1.6;
+	}
+
+	.ae-footer-nav {
+		display: flex;
+		gap: 1.1rem;
+		flex-wrap: wrap;
+	}
+
+	.ae-footer-nav a {
+		font-weight: 600;
+		color: var(--ae-ink);
+		text-decoration: none;
+	}
+
+	.ae-footer-nav a:hover {
+		color: var(--ae-cobalt);
+		text-decoration: underline;
+	}
+
+	.ae-footer-mark {
+		font-family: var(--ae-mono);
+		color: var(--ae-faint);
+	}
+
+	.ae-footer-row--quiet {
+		margin-top: 1.6rem;
+		padding-top: 1.2rem;
+		border-top: 1px solid var(--ae-line-soft);
+		font-size: 0.72rem;
+		color: var(--ae-faint);
+	}
+
+	.ae-footer-row--quiet p {
+		margin: 0;
+		max-width: 78ch;
+		line-height: 1.65;
+	}
+
+	.ae-footer-sign {
+		white-space: nowrap;
+	}
+</style>

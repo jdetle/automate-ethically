@@ -1,219 +1,239 @@
 ---
 import Page from "../layouts/Page.astro";
-import Stitch from "../components/Stitch.astro";
-import PillarCard from "../components/PillarCard.astro";
+import ActionMatcher from "../components/ui/ActionMatcher.astro";
+import Button from "../components/ui/Button.astro";
+import Callout from "../components/ui/Callout.astro";
+import Hero from "../components/ui/Hero.astro";
+import PillarCard from "../components/ui/PillarCard.astro";
+import Section from "../components/ui/Section.astro";
+import Signature from "../components/ui/Signature.astro";
+import Stat from "../components/ui/Stat.astro";
+import Stitch from "../components/ui/Stitch.astro";
 ---
 
 <Page
 	title="Automate Ethically"
 	description="A movement for automation with a human in the loop: laws that keep a person accountable for every automated decision, software built on that principle, and help retraining for durable work."
 >
-		<script type="application/ld+json" is:inline set:html={JSON.stringify({
-			"@context": "https://schema.org",
-			"@type": "Organization",
-			name: "Automate Ethically",
-			url: "https://automate-ethically.com",
-			logo: "https://automate-ethically.com/favicon.svg",
-			sameAs: ["https://jdetle.com", "https://github.com/jdetle/automate-ethically"],
-		})} />
+	<script type="application/ld+json" is:inline set:html={JSON.stringify({
+		"@context": "https://schema.org",
+		"@type": "Organization",
+		name: "Automate Ethically",
+		url: "https://automate-ethically.com",
+		logo: "https://automate-ethically.com/favicon.svg",
+		sameAs: ["https://jdetle.com", "https://github.com/jdetle/automate-ethically"],
+	})} />
 
-		<!-- DRAFT: rewrite — copy task 1: hero headline + subhead -->
-		<section class="ae-hero" aria-labelledby="hero-title">
-			<p class="ae-eyebrow">A movement for ethical automation</p>
-			<h1 id="hero-title">A human makes the decision.</h1>
-			<p class="ae-hero-sub">
-				Cameras watch your street. Machines answer your insurance claim. Data
-				centers rise at the edge of town. None of them can be held accountable
-				— only a person can. We want one rule, everywhere it matters:
-				<strong>a human makes the decision, and answers for it.</strong>
-			</p>
-			<p class="ae-hero-urgent">
-				The laws are being written right now — 45 states are debating them
-				this session. The rulebook gets set with you, or without you.
-			</p>
-			<figure class="ae-epigraph">
-				<blockquote>
-					The loom did not remove the weaver. A person still chose the pattern,
-					punched the cards, examined the cloth, and signed the bolt.
-				</blockquote>
-				<figcaption>jacquard, 1804 — and the rule we intend to keep</figcaption>
-			</figure>
-			<div class="ae-cta-row">
-				<a class="ae-btn ae-btn--primary" href="/act">Take action</a>
-				<a class="ae-btn ae-btn--ghost" href="#manifesto">Read the manifesto</a>
-			</div>
-		</section>
+	<!-- DRAFT: rewrite — copy task 1: hero headline + subhead -->
+	<!-- The site's one ink-shift headline and its one weave ground live here. -->
+	<Hero
+		eyebrow="A civic demand · zero JavaScript ran to show you this"
+		title="A human makes the decision."
+		size="display"
+		inkShift
+		weave
+		chips
+		titleId="hero-title"
+	>
+		<p class="ae-hero-sub">
+			Cameras watch your street. Machines answer your insurance claim. Data
+			centers rise at the edge of town. None of them can be held accountable —
+			only a person can.
+		</p>
+		<p class="ae-hero-urgent">
+			The laws are being written right now — 45 states are debating them this
+			session. The rulebook gets set with you, or without you.
+		</p>
+		<div class="ae-cta-row">
+			<Button href="/act">What you can do this week</Button>
+			<Button href="#manifesto" variant="secondary">Read the argument</Button>
+		</div>
+	</Hero>
 
-		<Stitch />
+	<Stitch />
 
-		<!-- DRAFT: rewrite — copy task 2: manifesto -->
-		<section class="ae-section" id="manifesto" aria-labelledby="manifesto-title">
-			<div class="ae-container">
-				<p class="ae-eyebrow">Why now</p>
-				<h2 class="ae-h2" id="manifesto-title">
-					The anger is real. Aim it at the rulebook.
-				</h2>
-				<div class="ae-prose">
-					<p>
-						You are right to be angry. The cameras went up without asking you.
-						The data center got its permits before you heard about it. The
-						machine denied the claim, and no one's name was on the denial.
-					</p>
-					<p>
-						But a data center is a totem. Block one, and the machines it
-						served move one county over. The win that lasts is a law: wherever
-						an automated system touches your life, a person decides — and that
-						person answers for it.
-					</p>
-					<p>
-						Machines cannot take responsibility. Companies will not volunteer
-						it. Rules change when neighbors organize — city by city, then
-						state by state. That is how it has always worked.
-					</p>
-				</div>
-			</div>
-		</section>
-
-		<Stitch />
-
-		<!-- DRAFT: rewrite — copy task 11: urgency stats framing (numbers + citations stay; see FACTS.md) -->
-		<section class="ae-section" id="clock" aria-labelledby="clock-title">
-			<div class="ae-container">
-				<p class="ae-eyebrow">Right now</p>
-				<h2 class="ae-h2" id="clock-title">The clock is the rulebook</h2>
-				<p class="ae-hero-sub">
-					None of this is hypothetical. It is already on your street, your
-					power bill, and your legislature's calendar.
-				</p>
-				<div class="ae-stats">
-					<div class="ae-stat">
-						<span class="ae-stat-num">6,000</span>
-						<span class="ae-stat-label">
-							communities watched by one company's license-plate cameras,
-							across 49 states
-						</span>
-						<span class="ae-stat-src">
-							<a href="https://www.ipm.org/news/2026-08-17/flock-safety-tightens-safeguards-as-states-cities-question-surveillance-network">Stateline</a>, Aug 2026
-						</span>
-					</div>
-					<div class="ae-stat">
-						<span class="ae-stat-num">426&thinsp;TWh</span>
-						<span class="ae-stat-label">
-							projected US data-center electricity by 2030 — more than double
-							2024, and nearly half of all US demand growth
-						</span>
-						<span class="ae-stat-src">
-							<a href="https://www.iea.org/reports/energy-and-ai/energy-demand-from-ai">IEA, Energy and AI</a>
-						</span>
-					</div>
-					<div class="ae-stat">
-						<span class="ae-stat-num">1,561</span>
-						<span class="ae-stat-label">
-							AI bills introduced in 45 states this session — the rules are
-							being written with you or without you
-						</span>
-						<span class="ae-stat-src">
-							<a href="https://www.multistate.ai/artificial-intelligence-ai-legislation">multistate.ai</a>, Mar 2026
-						</span>
-					</div>
-				</div>
-				<p class="ae-aside">
-					It can go the right way: more than 50 communities have already
-					paused or canceled camera contracts since January
-					(<a href="https://www.npr.org/2026/02/17/nx-s1-5612825/flock-contracts-canceled-immigration-survillance-concerns">NPR</a>),
-					and Montana already requires a human to review AI-driven agency
-					decisions. Facts checked Aug 2026 — sources and our correction
-					policy live in the open at
-					<a href="/facts">FACTS.md</a>. See
-					<a href="/states">what's already real, state by state</a>.
-				</p>
-			</div>
-		</section>
-
-		<Stitch />
-
-		<section class="ae-section ae-section--tint" id="pillars" aria-labelledby="pillars-title">
-			<div class="ae-container">
-				<p class="ae-eyebrow">The work</p>
-				<h2 class="ae-h2" id="pillars-title">Three pillars, one principle</h2>
-				<div class="ae-pillars">
-					<!-- DRAFT: rewrite — copy task 3: pillar Organize -->
-					<PillarCard title="Organize" chip="organizing now" id="organize">
-						<p>
-							Start where the decisions are made: city councils, county boards,
-							school boards. Ask for one ordinance:
-							<strong>an automation may act, but a person decides — and that
-							person is accountable.</strong> Then carry it to the state house.
-						</p>
-						<p><a href="/act">See how to get started &rarr;</a></p>
-					</PillarCard>
-					<!-- DRAFT: rewrite — copy task 4: pillar Build ethically -->
-					<PillarCard title="Build ethically" chip="software below" id="build">
-						<p>
-							Policy asks people to behave. Software can make the rule
-							physical. We build tools where
-							<strong>accountability is enforced by the build itself</strong> —
-							a machine can propose, but it cannot sign.
-						</p>
-						<p><a href="/about#projects">See what we're building &rarr;</a></p>
-					</PillarCard>
-					<!-- DRAFT: rewrite — copy task 5: pillar Retrain -->
-					<PillarCard title="Retrain" chip="starter list, not the layer" chipQuiet id="retrain">
-						<p>
-							The honest answer to "there will always be more work" is a
-							coordination layer that helps people
-							<strong>learn the next field while they still have this
-							job</strong> — from the office, from home, before the pink slip.
-							Without that layer, optimism becomes cruelty.
-						</p>
-						<p><a href="/toolkit/retrain">See where to start today &rarr;</a></p>
-					</PillarCard>
-				</div>
-			</div>
-		</section>
-
-		<Stitch />
-
-		<section class="ae-section ae-section--tint" aria-labelledby="about-pointer-title">
-			<div class="ae-container">
-				<p class="ae-eyebrow">The movement</p>
-				<h2 class="ae-h2" id="about-pointer-title">Neighbors, builders, and organizers.</h2>
-				<p class="ae-plain">
-					We intend to form a registered political committee. Until that
-					exists, we are not asking for money.
-				</p>
-				<p class="ae-aside">
-					<a href="/about">Who's behind this, and the software we're
-					building alongside it &rarr;</a>
-				</p>
-			</div>
-		</section>
-
-		<!-- DRAFT: rewrite — copy task 23: index action band replacing get-involved -->
-		<section class="ae-section" id="get-involved" aria-labelledby="cta-title">
-			<div class="ae-container">
-				<p class="ae-eyebrow">Get involved</p>
-				<h2 class="ae-h2" id="cta-title">Your town writes rules this year. Be in the room.</h2>
-				<p class="ae-plain">
-					Pick the rung you can reach today — thirty seconds or an hour, every
-					bit of it counts. Most ordinances pass in rooms with ten people in
-					them.
-				</p>
-				<div class="ae-cta-row">
-					<a class="ae-btn ae-btn--primary" href="/act#join">Join the list</a>
-					<a class="ae-btn ae-btn--ghost" href="/act#petition">Sign the petition</a>
-				</div>
-				<p class="ae-aside">
-					<a href="/act">See every way to help &rarr;</a>
-				</p>
-			</div>
-		</section>
-
-		<div class="ae-coda">
+	<!-- DRAFT: rewrite — copy task 2: manifesto -->
+	<Section
+		id="manifesto"
+		eyebrow="Why now"
+		title="The anger is real. Aim it at the rulebook."
+		titleId="manifesto-title"
+	>
+		<div class="ae-prose">
 			<p>
-				&ldquo;Physics was the easy part. Everyone still has to become
-				different at the same time, and everyone has a reason to go
-				last.&rdquo;
+				You are right to be angry. The cameras went up without asking you. The
+				data center got its permits before you heard about it. The machine
+				denied the claim, and no one's name was on the denial.
+			</p>
+			<p>
+				But a data center is a totem. Block one, and the machines it served
+				move one county over. The win that lasts is a law: wherever an
+				automated system touches your life, a person decides — and that person
+				answers for it.
+			</p>
+			<p>
+				Machines cannot take responsibility. Companies will not volunteer it.
+				Rules change when neighbors organize — city by city, then state by
+				state. That is how it has always worked.
 			</p>
 		</div>
+		<figure class="ae-epigraph">
+			<blockquote>
+				The loom did not remove the weaver. A person still chose the pattern,
+				punched the cards, examined the cloth, and signed the bolt.
+			</blockquote>
+			<figcaption>jacquard, 1804 — and the rule we intend to keep</figcaption>
+		</figure>
+	</Section>
+
+	<Stitch />
+
+	<!-- DRAFT: rewrite — copy task 11: urgency stats framing (numbers + citations stay; see FACTS.md) -->
+	<Section id="clock" eyebrow="Evidence, cited" title="The clock is the rulebook" titleId="clock-title" wide>
+		<p class="ae-plain">
+			None of this is hypothetical. It is already on your street, your power
+			bill, and your legislature's calendar.
+		</p>
+		<div class="ae-stats">
+			<Stat
+				value="6,000"
+				accent="cobalt"
+				label="communities watched by one company's license-plate cameras, across 49 states"
+				source={{
+					href: "https://www.ipm.org/news/2026-08-17/flock-safety-tightens-safeguards-as-states-cities-question-surveillance-network",
+					label: "Stateline, Aug 2026",
+				}}
+			/>
+			<Stat
+				value="426&thinsp;TWh"
+				accent="coral"
+				label="projected US data-center electricity by 2030 — more than double 2024, and nearly half of all US demand growth"
+				source={{
+					href: "https://www.iea.org/reports/energy-and-ai/energy-demand-from-ai",
+					label: "IEA, Energy and AI",
+				}}
+			/>
+			<Stat
+				value="1,561"
+				accent="ink"
+				label="AI bills introduced in 45 states this session — the rules are being written with you or without you"
+				source={{
+					href: "https://www.multistate.ai/artificial-intelligence-ai-legislation",
+					label: "multistate.ai, Mar 2026",
+				}}
+			/>
+		</div>
+		<Callout tone="sun" layout="banner" title="This is winnable." class="ae-winnable">
+			<p>
+				More than 50 communities have already
+				paused or canceled camera contracts since January
+				(<a href="https://www.npr.org/2026/02/17/nx-s1-5612825/flock-contracts-canceled-immigration-survillance-concerns">NPR</a>),
+				and Montana already requires a human to review AI-driven agency
+				decisions. Despair does not produce turnout. A specific, winnable ask
+				does.
+			</p>
+			<p>
+				Facts checked Aug 2026 — sources and our correction policy live in the
+				open at <a href="/facts">FACTS.md</a>. See
+				<a href="/states">what's already real, state by state</a>.
+			</p>
+		</Callout>
+	</Section>
+
+	<Stitch />
+
+	<Section
+		id="pillars"
+		eyebrow="Three ways in — three different kinds of commitment"
+		title="Three pillars, one principle"
+		titleId="pillars-title"
+		tint
+		wide
+	>
+		<div class="ae-pillars">
+			<!-- DRAFT: rewrite — copy task 3: pillar Organize -->
+			<PillarCard
+				id="organize"
+				kicker="Pillar 01 · A demand"
+				title="Organize"
+				tone="cobalt"
+				href="/pillars/organize"
+				linkLabel="The ordinance &amp; the script"
+			>
+				<p>
+					One ordinance, one clause: automated decisions by your city require a
+					named human reviewer. Bring it to a council meeting. We wrote the
+					script.
+				</p>
+			</PillarCard>
+			<!-- DRAFT: rewrite — copy task 4: pillar Build ethically -->
+			<PillarCard
+				id="build"
+				kicker="Pillar 02 · A practice"
+				title="Build ethically"
+				href="/about#projects"
+				linkLabel="See what we're building"
+			>
+				<pre class="ae-musts">MUST  a named person approves each release
+MUST  every automated decision is appealable
+MUST  the human can always say no</pre>
+				<Signature name="signed: a person, every time" />
+			</PillarCard>
+			<!-- DRAFT: rewrite — copy task 5: pillar Retrain -->
+			<PillarCard
+				id="retrain"
+				kicker="Pillar 03 · Solidarity"
+				title="Retrain"
+				tone="coral"
+				href="/toolkit/retrain"
+				linkLabel="Start while you're still employed"
+			>
+				<p>
+					Your job is on a list somewhere. That is not your failure. Learn the
+					next field while you still have this one — with people doing the same.
+				</p>
+			</PillarCard>
+		</div>
+	</Section>
+
+	<Stitch />
+
+	<Section id="get-involved" wide>
+		<ActionMatcher name="home" id="matcher" heading="What can you do?" />
+	</Section>
+
+	<Section eyebrow="The movement" title="Neighbors, builders, and organizers." titleId="about-pointer-title">
+		<p class="ae-plain">
+			We intend to form a registered political committee. Until that exists, we
+			are not asking for money.
+		</p>
+		<p class="ae-aside">
+			<a href="/about">Who's behind this, and the software we're building
+			alongside it &rarr;</a>
+		</p>
+	</Section>
+
+	<div class="ae-coda">
+		<p>
+			&ldquo;Physics was the easy part. Everyone still has to become different
+			at the same time, and everyone has a reason to go last.&rdquo;
+		</p>
+	</div>
 </Page>
+
+<style>
+	.ae-winnable {
+		margin-top: 28px;
+	}
+
+	/* The three MUSTs are a contract, so they are set as one — monospaced,
+	   unwrapped, and never reflowed into prose. */
+	.ae-musts {
+		margin: 0 0 1rem;
+		font-family: var(--ae-mono);
+		font-size: 0.75rem;
+		line-height: 1.7;
+		color: var(--ae-muted);
+		white-space: pre-wrap;
+	}
+</style>

@@ -1,819 +1,650 @@
-/* Layout, sections, and textile motifs. Token vocabulary lives in tokens.css. */
-
-* ,
-*::before,
-*::after {
-	box-sizing: border-box;
-}
+/*
+ * The global layer: base elements, page rhythm, and the long-form prose
+ * styles that markdown and the not-yet-converted pages rely on.
+ *
+ * Anything that is a *component* — button, chip, card, stat, stitch, rung,
+ * matcher — lives in src/components/ui/ with its own scoped styles. The
+ * component classes that still appear here are the plain-markup versions that
+ * markdown content and the remaining hand-written pages use; they are
+ * deliberately identical in appearance to their component counterparts so a
+ * page can be converted a piece at a time without a visual seam.
+ */
 
 html {
 	scroll-behavior: smooth;
+	-webkit-text-size-adjust: 100%;
 }
 
 body {
 	margin: 0;
-	min-height: 100vh;
-	font-family: var(--ae-sans);
-	font-size: 16px;
-	line-height: 1.6;
+	background: var(--ae-ground);
 	color: var(--ae-ink);
-	background: var(--ae-paper);
-	overflow-x: clip;
+	font-family: var(--ae-sans);
+	font-size: var(--ae-fs-body);
+	line-height: 1.6;
 	-webkit-font-smoothing: antialiased;
 }
 
 ::selection {
-	background: var(--ae-indigo-wash);
+	background: var(--ae-sun);
+	color: var(--ae-on-sun);
 }
 
 a {
-	color: var(--ae-indigo-ink);
-	text-underline-offset: 3px;
+	color: var(--ae-cobalt);
 	text-decoration-thickness: 1px;
+	text-underline-offset: 2px;
 }
 
 a:hover {
-	color: var(--ae-ink);
+	color: var(--ae-coral-ink);
 }
 
 :focus-visible {
-	outline: 2px solid var(--ae-indigo);
-	outline-offset: 3px;
-	border-radius: 4px;
+	outline: 2px solid var(--ae-cobalt);
+	outline-offset: 2px;
+	border-radius: 3px;
 }
 
 h1,
 h2,
 h3 {
-	margin: 0;
-	font-family: var(--ae-serif);
-	font-weight: 480;
-	color: var(--ae-ink);
+	font-family: var(--ae-display);
+	font-weight: 700;
+	letter-spacing: -0.01em;
+	text-wrap: balance;
 }
 
 p {
-	margin: 0;
+	margin: 0 0 1rem;
+}
+
+img {
+	max-width: 100%;
+	height: auto;
 }
 
 .ae-skip {
 	position: absolute;
-	left: -999px;
-	top: 8px;
+	left: -9999px;
+	top: 0;
 	z-index: 10;
-	padding: 8px 14px;
-	background: var(--ae-paper);
-	border: 1px solid var(--ae-line-strong);
-	border-radius: 999px;
-	font-size: 13px;
+	background: var(--ae-ink);
+	color: var(--ae-ground);
+	padding: 10px 18px;
+	border-radius: 0 0 var(--ae-r-tile) 0;
+	font-weight: 700;
+	text-decoration: none;
 }
 
 .ae-skip:focus-visible {
-	left: 8px;
+	left: 0;
 }
-
-/* Woven-cloth ground: fiber noise + warp/weft grid. The noise is a
- * pre-rasterized tiled SVG baked into a background-image, never a live CSS
- * filter — tiled backgrounds are effectively free. */
-.ae-weave {
-	position: fixed;
-	inset: 0;
-	pointer-events: none;
-	z-index: 0;
-	opacity: 0.5;
-	color: var(--ae-line-soft);
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.35 0 0 0 0 0.35 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"),
-		repeating-linear-gradient(
-			0deg,
-			currentColor 0px,
-			currentColor 1px,
-			transparent 1px,
-			transparent 5px
-		),
-		repeating-linear-gradient(
-			90deg,
-			currentColor 0px,
-			currentColor 1px,
-			transparent 1px,
-			transparent 6px
-		);
-}
-
-/* ---- Header ---- */
-
-.ae-header {
-	position: relative;
-	z-index: 2;
-	max-width: 1120px;
-	margin: 0 auto;
-	padding: 22px 24px;
-	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	justify-content: space-between;
-	gap: 14px;
-}
-
-.ae-wordmark {
-	display: inline-flex;
-	align-items: center;
-	gap: 10px;
-	text-decoration: none;
-	color: var(--ae-ink);
-}
-
-.ae-wordmark-pill {
-	display: inline-block;
-	padding: 5px 12px;
-	border: 1px dashed var(--ae-madder);
-	border-radius: 999px;
-	font-family: var(--ae-mono);
-	font-size: 12px;
-	letter-spacing: 0.02em;
-	white-space: nowrap;
-	color: var(--ae-ink);
-}
-
-.ae-nav {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	justify-content: flex-end;
-	min-width: 0;
-	gap: 10px 18px;
-	font-size: 12px;
-	letter-spacing: var(--ae-tracking-chip);
-	text-transform: uppercase;
-}
-
-.ae-nav a {
-	text-decoration: none;
-	color: var(--ae-muted);
-	/* Finger-sized tap targets without disturbing the text grid. */
-	padding: 12px 4px;
-	margin: -12px -4px;
-}
-
-.ae-nav a:hover {
-	color: var(--ae-ink);
-}
-
-/* ---- Sections ---- */
 
 main {
-	position: relative;
-	z-index: 1;
+	display: block;
 }
 
+/* ---- page rhythm ------------------------------------------------------- */
+
 .ae-section {
-	scroll-margin-top: 24px;
+	padding: clamp(2.75rem, 1.8rem + 3.4vw, 4.5rem) var(--ae-gutter);
 }
 
 .ae-section--tint {
-	background: var(--ae-paper-2);
-	border-top: 1px solid var(--ae-line-soft);
-	border-bottom: 1px solid var(--ae-line-soft);
+	background: var(--ae-ground-2);
 }
 
 .ae-container {
-	max-width: 1120px;
+	max-width: var(--ae-max-page);
 	margin: 0 auto;
-	padding: 64px 24px;
 }
 
 .ae-eyebrow {
-	margin: 0;
+	margin: 0 0 1.1rem;
 	font-family: var(--ae-sans);
-	font-size: 12px;
-	font-weight: 600;
+	font-weight: 700;
+	font-size: var(--ae-fs-eyebrow);
 	letter-spacing: var(--ae-tracking-eyebrow);
 	text-transform: uppercase;
-	color: var(--ae-madder);
+	color: var(--ae-cobalt);
 }
 
 .ae-h2 {
-	margin: 16px 0 0;
-	font-size: clamp(28px, 3.6vw, 44px);
+	margin: 0 0 1.4rem;
+	font-family: var(--ae-display);
+	font-weight: 600;
+	font-size: var(--ae-fs-h2);
 	line-height: 1.15;
 }
+
+/* ---- hero (plain-markup version) --------------------------------------- */
+
+.ae-hero {
+	position: relative;
+	overflow: hidden;
+	padding: clamp(3.5rem, 2rem + 6vw, 6.5rem) var(--ae-gutter) clamp(3rem, 2rem + 4vw, 5.5rem);
+	max-width: var(--ae-max-page);
+	margin: 0 auto;
+}
+
+.ae-hero h1 {
+	margin: 0;
+	font-size: var(--ae-fs-h1);
+	line-height: 1.02;
+	letter-spacing: var(--ae-tracking-display);
+	max-width: 20ch;
+}
+
+.ae-hero-sub {
+	margin: 1.6rem 0 0;
+	font-size: var(--ae-fs-lede);
+	line-height: 1.55;
+	color: var(--ae-muted);
+	max-width: 620px;
+}
+
+.ae-hero-urgent {
+	margin: 1.2rem 0 0;
+	font-size: var(--ae-fs-body);
+	line-height: 1.6;
+	color: var(--ae-coral-ink);
+	font-weight: 600;
+	max-width: 46ch;
+}
+
+/* ---- prose ------------------------------------------------------------- */
 
 .ae-prose {
 	max-width: var(--ae-max-text);
 }
 
 .ae-prose p {
-	margin: 18px 0 0;
-	font-size: 17px;
+	margin: 0 0 1.1rem;
 	line-height: 1.7;
 }
 
-/* Markdown-rendered content (toolkit docs, FAQ, facts) produces real h2/h3s
- * with nothing between them and the paragraph above — the global h1,h2,h3
- * reset zeroes all heading margins, and .ae-prose never gave them back. */
 .ae-prose h2 {
-	margin: 44px 0 0;
-	font-size: clamp(22px, 2.6vw, 30px);
-	line-height: 1.25;
+	margin: 2.4rem 0 0.8rem;
+	font-size: var(--ae-fs-h2);
+	font-weight: 600;
 }
 
 .ae-prose h3 {
-	margin: 34px 0 0;
-	font-size: clamp(18px, 2vw, 22px);
-	line-height: 1.3;
+	margin: 1.9rem 0 0.6rem;
+	font-size: var(--ae-fs-h3);
 }
 
 .ae-prose h2 + p,
 .ae-prose h3 + p {
-	margin-top: 12px;
+	margin-top: 0;
 }
 
 .ae-prose ul,
 .ae-prose ol {
-	margin: 18px 0 0;
-	padding-left: 1.3em;
+	margin: 0 0 1.1rem;
+	padding-left: 1.3rem;
 }
 
 .ae-prose li {
-	font-size: 17px;
 	line-height: 1.7;
 }
 
 .ae-prose li + li {
-	margin-top: 8px;
+	margin-top: 0.4rem;
 }
 
 .ae-prose blockquote {
-	margin: 22px 0 0;
-	padding-left: 18px;
-	border-left: 2px solid var(--ae-line-strong);
-}
-
-/* ---- Hero ---- */
-
-.ae-hero {
-	max-width: 1120px;
-	margin: 0 auto;
-	padding: 56px 24px 72px;
-}
-
-.ae-hero h1 {
-	margin: 20px 0 0;
-	font-size: clamp(38px, 6.4vw, 76px);
-	line-height: 1.05;
-	letter-spacing: -0.015em;
-	max-width: 18ch;
-}
-
-.ae-hero-sub {
-	margin: 22px 0 0;
-	font-size: clamp(16px, 1.6vw, 19px);
-	line-height: 1.62;
+	margin: 1.4rem 0;
+	padding: 0.2rem 0 0.2rem 1.1rem;
+	border-left: 3px solid var(--ae-coral);
 	color: var(--ae-muted);
-	max-width: 58ch;
 }
+
+.ae-prose table {
+	width: 100%;
+	border-collapse: collapse;
+	margin: 1.4rem 0;
+	font-size: var(--ae-fs-small);
+}
+
+.ae-prose th,
+.ae-prose td {
+	text-align: left;
+	padding: 9px 12px;
+	border-bottom: 1px solid var(--ae-line);
+	vertical-align: top;
+}
+
+.ae-prose th {
+	font-family: var(--ae-sans);
+	font-weight: 700;
+	font-size: var(--ae-fs-eyebrow);
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--ae-faint);
+}
+
+/* ---- epigraph ---------------------------------------------------------- */
 
 .ae-epigraph {
-	margin: 30px 0 0;
-	padding-left: 18px;
-	border-left: 2px solid var(--ae-line-strong);
+	margin: 2rem 0 0;
 	max-width: 52ch;
+	border-left: 3px solid var(--ae-cobalt);
+	padding-left: 1.2rem;
 }
 
 .ae-epigraph blockquote {
 	margin: 0;
-	font-family: var(--ae-serif);
-	font-size: clamp(16px, 1.7vw, 20px);
-	line-height: 1.5;
+	font-family: var(--ae-display);
+	font-size: 1.06rem;
 	font-style: italic;
-	color: var(--ae-ink);
+	line-height: 1.55;
 }
 
 .ae-epigraph figcaption {
-	margin-top: 8px;
-	font-size: 12px;
-	letter-spacing: var(--ae-tracking-chip);
-	text-transform: uppercase;
-	color: var(--ae-muted);
+	margin-top: 0.6rem;
+	font-size: var(--ae-fs-meta);
+	color: var(--ae-faint);
 }
 
+/* ---- buttons (plain-markup version of ui/Button.astro) ----------------- */
+
 .ae-cta-row {
-	margin-top: 34px;
 	display: flex;
 	flex-wrap: wrap;
-	gap: 12px;
+	gap: 14px;
+	margin-top: 2rem;
 }
 
 .ae-btn {
-	display: inline-flex;
-	align-items: center;
-	min-height: 44px;
-	padding: 0 22px;
-	border-radius: 999px;
-	border: 1px solid var(--ae-line-strong);
-	color: var(--ae-ink);
+	display: inline-block;
+	font-family: var(--ae-display);
+	font-weight: 700;
+	font-size: 0.94rem;
+	line-height: 1.15;
+	border-radius: var(--ae-r-pill);
 	text-decoration: none;
-	font-size: 12px;
-	font-weight: 600;
-	letter-spacing: var(--ae-tracking-chip);
-	text-transform: uppercase;
-	transition: transform 140ms var(--ae-ease), box-shadow 140ms var(--ae-ease);
+	border: 2px solid transparent;
+	cursor: pointer;
+	transition:
+		transform var(--ae-dur-lift) var(--ae-ease),
+		box-shadow var(--ae-dur-lift) var(--ae-ease),
+		background var(--ae-dur-lift) var(--ae-ease);
 }
 
 .ae-btn:hover {
-	transform: translateY(-1px);
-	box-shadow: 0 6px 16px var(--ae-shadow);
-	color: var(--ae-ink);
+	transform: translateY(-4px);
+	box-shadow: 0 10px 24px var(--ae-shadow);
 }
 
 .ae-btn--primary {
-	border-color: var(--ae-madder);
-	background: var(--ae-madder-wash);
+	background: var(--ae-coral);
+	color: var(--ae-on-coral);
+	padding: 15px 28px;
+}
+
+.ae-btn--primary:hover {
+	background: var(--ae-coral-ink);
+	color: var(--ae-on-coral);
 }
 
 .ae-btn--ghost {
-	background: transparent;
+	border-color: var(--ae-cobalt);
+	color: var(--ae-cobalt);
+	padding: 13px 28px;
 }
 
-/* ---- Running stitch divider ---- */
-
-.ae-stitch {
-	display: block;
-	max-width: 1120px;
-	margin: 0 auto;
-	padding: 0 24px;
-	color: var(--ae-madder);
+.ae-btn--ghost:hover {
+	background: var(--ae-cobalt-wash);
+	color: var(--ae-cobalt);
 }
 
-.ae-stitch svg {
-	display: block;
-	width: 100%;
-	height: 14px;
+.ae-btn--lg {
+	font-size: 1.06rem;
+	padding: 17px 34px;
 }
 
-/* ---- Pull quote (gold = a human's hands; only accountability wears it) ---- */
-
-.ae-pullquote {
-	margin: 34px 0 0;
-	max-width: var(--ae-max-text);
-	padding: 20px 22px;
-	border-left: 3px solid var(--ae-gold);
-	background: var(--ae-gold-wash);
-	border-radius: 0 6px 6px 0;
-}
-
-.ae-pullquote blockquote {
-	margin: 0;
-	font-family: var(--ae-serif);
-	font-size: clamp(19px, 2vw, 24px);
-	line-height: 1.4;
-	color: var(--ae-ink);
-}
-
-.ae-pullquote figcaption {
-	margin-top: 10px;
-	font-size: 13px;
-	color: var(--ae-muted);
-}
-
-/* ---- Urgency stats (numbers are the display type; every number cites) ---- */
-
-.ae-hero-urgent {
-	margin: 16px 0 0;
-	font-size: clamp(15px, 1.5vw, 18px);
-	line-height: 1.6;
-	color: var(--ae-madder);
-	font-weight: 600;
-	max-width: 58ch;
-}
+/* ---- stats (plain-markup version of ui/Stat.astro) --------------------- */
 
 .ae-stats {
-	margin-top: 40px;
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-	gap: 32px 40px;
+	grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+	gap: 24px;
+	margin-top: 2rem;
 }
 
 .ae-stat {
-	display: flex;
-	flex-direction: column;
-	gap: 10px;
+	background: var(--ae-card);
+	border: 1px solid var(--ae-line);
+	border-radius: var(--ae-r-card);
+	padding: 26px 26px 22px;
 }
 
 .ae-stat-num {
-	font-family: var(--ae-serif);
-	font-weight: 560;
-	font-size: clamp(52px, 6vw, 84px);
+	display: block;
+	font-family: var(--ae-display);
+	font-weight: 700;
+	font-size: clamp(2.5rem, 1.4rem + 3.4vw, 4rem);
 	line-height: 1;
-	letter-spacing: -0.02em;
-	color: var(--ae-ink);
-	padding-bottom: 12px;
-	background-image: repeating-linear-gradient(
-		90deg,
-		var(--ae-madder) 0 9px,
-		transparent 9px 16px
-	);
-	background-size: 100% 2px;
-	background-position: left bottom;
-	background-repeat: no-repeat;
+	letter-spacing: -0.015em;
+	color: var(--ae-cobalt);
 }
 
 .ae-stat-label {
-	font-size: 15px;
-	line-height: 1.55;
-	color: var(--ae-ink);
-	max-width: 30ch;
+	display: block;
+	margin: 10px 0 8px;
+	font-size: 0.906rem;
+	line-height: 1.5;
 }
 
 .ae-stat-src {
-	font-size: 12.5px;
-	color: var(--ae-muted);
+	display: block;
+	font-size: var(--ae-fs-meta);
+	color: var(--ae-faint);
 }
 
-/* ---- Pillar cards ---- */
+.ae-stat-src a {
+	color: var(--ae-cobalt);
+}
 
-.ae-pillars {
-	margin-top: 38px;
+/* ---- cards (plain-markup version of ui/Card.astro) --------------------- */
+
+.ae-pillars,
+.ae-projects {
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-	gap: 20px;
+	grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+	gap: 22px;
+	align-items: start;
+	margin-top: 1.6rem;
 }
 
 .ae-card {
 	position: relative;
-	padding: 22px;
-	border: 1px solid var(--ae-line);
-	border-radius: 10px;
 	background: var(--ae-card);
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
+	border: 1px solid var(--ae-line);
+	border-radius: var(--ae-r-card);
+	padding: 30px 28px 26px;
+	transition:
+		transform var(--ae-dur-lift) var(--ae-ease),
+		box-shadow var(--ae-dur-lift) var(--ae-ease);
 }
 
-/* Punched-card strip: a person punched the cards. */
+.ae-card:hover {
+	transform: translateY(-4px);
+	box-shadow: 0 10px 24px var(--ae-shadow);
+}
+
 .ae-card-punch {
-	height: 10px;
-	border-radius: 5px;
-	background: radial-gradient(
-			circle at 5px 5px,
-			var(--ae-paper-2) 2.6px,
-			transparent 3.2px
-		)
-		left center / 14px 10px repeat-x;
-	border: 1px solid var(--ae-line-soft);
-	background-color: var(--ae-indigo-wash);
+	position: absolute;
+	top: 20px;
+	right: 20px;
+	width: 13px;
+	height: 13px;
+	border-radius: 50%;
+	background: var(--ae-ground);
+	box-shadow: inset 0 1.5px 3px rgba(16, 23, 51, 0.35);
+	border: 1px solid var(--ae-line-strong);
 }
 
 .ae-card h3 {
-	font-size: 24px;
-	line-height: 1.2;
+	margin: 0 0 0.7rem;
+	font-size: 1.5rem;
+	line-height: 1.15;
+	padding-right: 1.6rem;
 }
 
 .ae-card p {
-	font-size: 15px;
-	line-height: 1.65;
+	font-size: 0.906rem;
+	line-height: 1.6;
 	color: var(--ae-muted);
 }
 
 .ae-card p strong {
 	color: var(--ae-ink);
-	font-weight: 600;
 }
-
-.ae-chip {
-	align-self: flex-start;
-	margin-top: auto;
-	display: inline-block;
-	padding: 4px 11px;
-	border: 1px solid var(--ae-madder);
-	border-radius: 999px;
-	font-size: 11px;
-	font-weight: 600;
-	letter-spacing: var(--ae-tracking-chip);
-	text-transform: uppercase;
-	color: var(--ae-madder);
-	background: var(--ae-madder-wash);
-}
-
-.ae-chip--quiet {
-	border-color: var(--ae-line-strong);
-	color: var(--ae-muted);
-	background: transparent;
-}
-
-/* ---- Project cards ---- */
-
-.ae-projects {
-	margin-top: 38px;
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-	gap: 20px;
-}
-
-.ae-project-name {
-	font-family: var(--ae-mono);
-	font-size: 15px;
-	letter-spacing: 0.02em;
-}
-
-.ae-project-human {
-	padding-left: 12px;
-	border-left: 2px solid var(--ae-gold);
-	color: var(--ae-ink);
-	font-style: italic;
-}
-
-.ae-aside {
-	margin-top: 26px;
-	font-size: 14px;
-	color: var(--ae-muted);
-	max-width: var(--ae-max-text);
-}
-
-/* ---- Movement / coda / CTA ---- */
-
-.ae-plain {
-	margin: 22px 0 0;
-	font-family: var(--ae-serif);
-	font-size: clamp(19px, 2.2vw, 26px);
-	line-height: 1.45;
-	max-width: 46ch;
-}
-
-.ae-states-cta {
-	margin-top: 48px;
-}
-
-.ae-coda {
-	max-width: 1120px;
-	margin: 0 auto;
-	padding: 44px 24px;
-	text-align: center;
-}
-
-.ae-coda p {
-	font-family: var(--ae-serif);
-	font-style: italic;
-	font-size: clamp(17px, 1.9vw, 22px);
-	color: var(--ae-muted);
-	max-width: 52ch;
-	margin: 0 auto;
-}
-
-/* ---- Footer ---- */
-
-.ae-footer {
-	border-top: 1px solid var(--ae-line-soft);
-	position: relative;
-	z-index: 1;
-}
-
-.ae-footer-inner {
-	max-width: 1120px;
-	margin: 0 auto;
-	padding: 28px 24px 40px;
-	display: flex;
-	flex-wrap: wrap;
-	align-items: baseline;
-	justify-content: space-between;
-	gap: 10px 20px;
-	font-size: 13px;
-	color: var(--ae-muted);
-}
-
-.ae-footer-sign {
-	font-family: var(--ae-serif);
-	font-style: italic;
-}
-
-/* ---- Nav: Act is the one primary link ---- */
-
-.ae-nav-act {
-	color: var(--ae-madder);
-	font-weight: 700;
-}
-
-.ae-nav-act:hover {
-	color: var(--ae-madder);
-}
-
-/* ---- Footer nav + the no-tracking line ---- */
-
-.ae-footer-nav {
-	display: flex;
-	gap: 16px;
-}
-
-.ae-footer-nav a {
-	text-decoration: none;
-	color: var(--ae-muted);
-}
-
-.ae-footer-nav a:hover {
-	color: var(--ae-ink);
-}
-
-.ae-footer-inner--quiet {
-	padding-top: 0;
-	padding-bottom: 28px;
-	font-size: 12px;
-	max-width: 68ch;
-}
-
-/* ---- Toolkit / card-as-link ---- */
 
 .ae-card-link {
 	text-decoration: none;
-	transition: transform 140ms var(--ae-ease), box-shadow 140ms var(--ae-ease);
+	color: inherit;
+	display: block;
 }
 
-.ae-card-link:hover {
-	color: var(--ae-ink);
-	transform: translateY(-2px);
-	box-shadow: 0 8px 20px var(--ae-shadow);
+.ae-card-link:hover h3 {
+	color: var(--ae-cobalt);
 }
 
-/* ---- Print banner: a note, not a warning ---- */
+/* ---- chips (plain-markup version of ui/Chip.astro) --------------------- */
 
-.ae-note {
-	margin: 22px 0 0;
-	padding: 14px 18px;
-	max-width: var(--ae-max-text);
-	border: 1px solid var(--ae-line);
-	border-radius: 8px;
-	background: var(--ae-indigo-wash);
-	font-size: 14px;
-	color: var(--ae-ink);
-}
-
-/* A model ordinance's disclaimer — distinct from .ae-note, always visible,
- * never dismissible, and printed rather than hidden under @media print. */
-.ae-legal-notice {
-	margin: 22px 0 0;
-	padding: 16px 20px;
-	max-width: var(--ae-max-text);
-	border: 1px solid var(--ae-madder);
-	border-radius: 8px;
-	background: var(--ae-madder-wash);
-	font-size: 14px;
-	line-height: 1.6;
-	color: var(--ae-ink);
-}
-
-/* ---- Prose tables (the facts page) ---- */
-
-.ae-prose table {
-	margin: 22px 0 0;
-	width: 100%;
-	border-collapse: collapse;
-	font-size: 14px;
-}
-
-.ae-prose th,
-.ae-prose td {
-	padding: 10px 14px;
-	border-bottom: 1px solid var(--ae-line-soft);
-	text-align: left;
-	vertical-align: top;
-}
-
-.ae-prose th {
-	font-size: 12px;
+.ae-chip {
+	display: inline-block;
+	background: var(--ae-sun);
+	color: var(--ae-on-sun);
+	font-family: var(--ae-sans);
+	font-weight: 700;
+	font-size: 0.66rem;
 	letter-spacing: var(--ae-tracking-chip);
 	text-transform: uppercase;
-	color: var(--ae-muted);
-	font-weight: 600;
+	padding: 5px 11px;
+	border-radius: var(--ae-r-pill);
+	border: 2px solid transparent;
 }
 
-/* ---- Action ladder ---- */
+.ae-chip--quiet {
+	background: transparent;
+	border-color: var(--ae-cobalt);
+	color: var(--ae-cobalt);
+}
+
+/* ---- ladder (plain-markup version of ui/LadderRung.astro) -------------- */
 
 .ae-ladder {
 	list-style: none;
-	margin: 0;
+	margin: 2rem 0 0;
 	padding: 0;
 	display: flex;
 	flex-direction: column;
+	gap: 18px;
 }
 
 .ae-rung {
-	scroll-margin-top: 24px;
-	padding: 34px 0;
-	border-top: 1px solid var(--ae-line-soft);
-	max-width: var(--ae-max-text);
-}
-
-.ae-rung:first-child {
-	border-top: none;
-	padding-top: 0;
+	position: relative;
+	background: var(--ae-card);
+	border: 1px solid var(--ae-line);
+	border-radius: var(--ae-r-card);
+	padding: 24px 26px 26px;
 }
 
 .ae-rung-time {
 	display: inline-block;
-	margin-bottom: 8px;
-	padding: 3px 10px;
-	border: 1px solid var(--ae-line-strong);
-	border-radius: 999px;
-	font-size: 11px;
-	font-weight: 600;
-	letter-spacing: var(--ae-tracking-chip);
+	background: var(--ae-sun);
+	color: var(--ae-on-sun);
+	font-family: var(--ae-mono);
+	font-weight: 700;
+	font-size: 0.72rem;
+	letter-spacing: 0.04em;
 	text-transform: uppercase;
-	color: var(--ae-muted);
+	padding: 5px 12px;
+	border-radius: var(--ae-r-pill);
+	margin-bottom: 0.8rem;
+}
+
+.ae-rung .ae-h2 {
+	margin-bottom: 0.8rem;
 }
 
 .ae-rung .ae-cta-row {
-	margin-top: 20px;
+	margin-top: 1.2rem;
 }
 
 .ae-rung-sub {
-	margin: 26px 0 0;
-	font-size: 16px;
-	font-weight: 600;
-	color: var(--ae-ink);
+	margin: 1.4rem 0 0.5rem;
+	font-size: var(--ae-fs-h3);
 }
 
-/* ---- One-pager sheet ---- */
+/* ---- asides, notes, coda ----------------------------------------------- */
 
-.ae-onepager-sheet {
-	max-width: 680px;
-	padding: 48px 40px;
-	border: 1px solid var(--ae-line);
-	border-radius: 4px;
-	background: var(--ae-card);
+.ae-aside {
+	margin: 1.4rem 0 0;
+	font-size: var(--ae-fs-small);
+	line-height: 1.65;
+	color: var(--ae-muted);
+	max-width: var(--ae-max-text);
 }
 
-.ae-stats--compact {
-	margin-top: 26px;
-	gap: 20px 28px;
+.ae-plain {
+	margin: 0 0 1rem;
+	font-size: var(--ae-fs-body);
+	line-height: 1.65;
+	max-width: var(--ae-max-text);
 }
 
-.ae-stats--compact .ae-stat-num {
-	font-size: clamp(34px, 4vw, 46px);
-	padding-bottom: 8px;
+.ae-note {
+	border: 2px solid var(--ae-coral);
+	background: var(--ae-coral-wash);
+	border-radius: var(--ae-r-panel);
+	padding: 16px 20px;
+	font-size: var(--ae-fs-small);
+	line-height: 1.6;
+	margin: 0 0 1.6rem;
+	max-width: var(--ae-max-text);
 }
 
-.ae-onepager-footer {
-	margin-top: 34px;
-	display: flex;
-	align-items: center;
-	gap: 20px;
-	flex-wrap: wrap;
+.ae-legal-notice {
+	border: 2px solid var(--ae-coral);
+	background: var(--ae-coral-wash);
+	border-radius: var(--ae-r-panel);
+	padding: 18px 22px;
+	font-size: var(--ae-fs-small);
+	line-height: 1.6;
+	margin: 1.6rem 0;
+	max-width: var(--ae-max-text);
 }
 
-.ae-onepager-qr {
-	width: 96px;
-	height: 96px;
-	flex-shrink: 0;
+.ae-states-cta {
+	margin-top: 1.6rem;
 }
 
-.ae-onepager-qr svg {
-	width: 100%;
-	height: 100%;
-	display: block;
+/* The one project note that is about a person, not a program. */
+.ae-project-human {
+	border-bottom: 2px solid var(--ae-gold);
+	padding-bottom: 1px;
+	color: var(--ae-gold-ink);
 }
 
-/* ---- Quote cards (shareable images, /act rung 3) ---- */
+.ae-project-name {
+	font-family: var(--ae-display);
+}
+
+.ae-coda {
+	max-width: var(--ae-max-page);
+	margin: 0 auto;
+	padding: 0 var(--ae-gutter) clamp(3rem, 2rem + 3vw, 4.5rem);
+}
+
+.ae-coda p {
+	margin: 0;
+	font-family: var(--ae-display);
+	font-style: italic;
+	font-size: var(--ae-fs-lede);
+	line-height: 1.55;
+	color: var(--ae-muted);
+	max-width: 56ch;
+	border-left: 3px solid var(--ae-sun);
+	padding-left: 1.2rem;
+}
+
+/* ---- share cards ------------------------------------------------------- */
 
 .ae-quote-cards-intro {
-	margin-top: 28px;
+	margin-top: 1.6rem;
 }
 
 .ae-quote-cards {
-	margin-top: 14px;
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
 	gap: 14px;
-	max-width: var(--ae-max-text);
+	margin-top: 0.8rem;
 }
 
 .ae-quote-cards a {
 	display: block;
-	border-radius: 6px;
+	border-radius: var(--ae-r-tile);
 	overflow: hidden;
 	border: 1px solid var(--ae-line);
-	transition: transform 140ms var(--ae-ease), box-shadow 140ms var(--ae-ease);
+	transition: transform var(--ae-dur-lift) var(--ae-ease);
 }
 
 .ae-quote-cards a:hover {
-	transform: translateY(-2px);
-	box-shadow: 0 8px 20px var(--ae-shadow);
+	transform: translateY(-4px);
 }
 
 .ae-quote-cards img {
 	display: block;
 	width: 100%;
+}
+
+/* ---- the printed one-pager --------------------------------------------- */
+
+.ae-onepager-sheet {
+	max-width: 816px;
+}
+
+.ae-stats--compact {
+	gap: 20px;
+}
+
+.ae-stats--compact .ae-stat {
+	padding: 0;
+	border: 0;
+	background: none;
+}
+
+.ae-stats--compact .ae-stat-num {
+	font-size: 2.4rem;
+}
+
+.ae-onepager-footer {
+	display: flex;
+	align-items: center;
+	gap: 20px;
+	margin-top: 1.6rem;
+	padding-top: 1.2rem;
+	border-top: 1px solid var(--ae-line);
+}
+
+.ae-onepager-qr {
+	flex: none;
+	width: 96px;
+}
+
+.ae-onepager-qr svg {
+	display: block;
+	width: 100%;
 	height: auto;
 }
 
-/* ---- Motion ---- */
+/* ------------------------------------------------------------------------ */
 
 @media (prefers-reduced-motion: reduce) {
 	html {
 		scroll-behavior: auto;
 	}
 
-	.ae-btn {
+	.ae-btn,
+	.ae-card,
+	.ae-quote-cards a {
 		transition: none;
 	}
 
-	.ae-btn:hover {
+	.ae-btn:hover,
+	.ae-card:hover,
+	.ae-quote-cards a:hover {
 		transform: none;
+		box-shadow: none;
+	}
+
+	.ae-card:hover {
+		border-color: var(--ae-cobalt);
 	}
 }

@@ -97,9 +97,9 @@ const { size = 140 } = Astro.props;
 					window.matchMedia?.("(prefers-color-scheme: dark)").matches &&
 					document.documentElement.getAttribute("data-theme") !== "light";
 
-				const INDIGO = { light: 0x3b5386, dark: 0x8aa6e0 };
-				const MADDER = { light: 0xa04338, dark: 0xd98a7c };
-				const color = new THREE.Color(INDIGO.light);
+				const COBALT = { light: 0x2b4bf2, dark: 0x7d93ff };
+				const CORAL = { light: 0xff5440, dark: 0xff8a7a };
+				const color = new THREE.Color(COBALT.light);
 
 				const mat = new THREE.PointsMaterial({
 					size: 0.024,
@@ -185,7 +185,7 @@ const { size = 140 } = Astro.props;
 					geo.attributes.position.needsUpdate = true;
 					scene.rotation.y = clock * 0.35;
 
-					const target = cur.state === "listening" || cur.state === "searching" ? MADDER : INDIGO;
+					const target = cur.state === "listening" || cur.state === "searching" ? CORAL : COBALT;
 					const hex = isDark() ? target.dark : target.light;
 					color.setHex(hex);
 					mat.color.copy(color);
@@ -212,12 +212,12 @@ const { size = 140 } = Astro.props;
 		width: var(--orb-size);
 		height: var(--orb-size);
 		flex-shrink: 0;
-		color: var(--ae-indigo);
+		color: var(--ae-cobalt);
 		transition: color 300ms ease;
 	}
 
 	.ae-orb[data-state="listening"] {
-		color: var(--ae-madder);
+		color: var(--ae-coral);
 	}
 
 	.ae-orb-canvas {

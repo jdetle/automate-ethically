@@ -7,19 +7,87 @@ const isAct = path.startsWith("/act");
 ---
 
 <header class="ae-header">
-	<a class="ae-wordmark" href="/">
-		<span class="ae-wordmark-pill">automate&nbsp;ethically</span>
-	</a>
+	<a class="ae-wordmark" href="/">Automate, Ethically.</a>
 	<nav class="ae-nav" aria-label="Sections">
-		<a href="/#clock">Why now</a>
-		<a href="/#pillars">The work</a>
+		<a href="/#manifesto">The argument</a>
+		<a href="/#clock">Evidence</a>
 		<a href="/toolkit" aria-current={isToolkit ? "page" : undefined}>Toolkit</a>
 		<a href="/guide" aria-current={path === "/guide" ? "page" : undefined}>Talk it through</a>
 		<a href="/search" aria-current={path === "/search" ? "page" : undefined}>Search</a>
-		<a
-			class="ae-nav-act"
-			href="/act"
-			aria-current={isAct ? "page" : undefined}
-		>Act</a>
+		<a class="ae-nav-act" href="/act" aria-current={isAct ? "page" : undefined}>Act</a>
 	</nav>
 </header>
+
+<style>
+	.ae-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 1.5rem;
+		flex-wrap: wrap;
+		padding: 16px var(--ae-gutter);
+		border-bottom: 1px solid var(--ae-line);
+		max-width: var(--ae-max-page);
+		margin: 0 auto;
+		position: relative;
+		z-index: 2;
+	}
+
+	.ae-wordmark {
+		font-family: var(--ae-display);
+		font-weight: 700;
+		font-size: 1.19rem;
+		color: var(--ae-ink);
+		text-decoration: none;
+		white-space: nowrap;
+	}
+
+	.ae-wordmark:hover {
+		color: var(--ae-cobalt);
+	}
+
+	.ae-nav {
+		display: flex;
+		align-items: center;
+		gap: clamp(0.75rem, 0.2rem + 1.4vw, 1.75rem);
+		flex-wrap: wrap;
+	}
+
+	.ae-nav a {
+		font-family: var(--ae-sans);
+		font-weight: 600;
+		font-size: 0.844rem;
+		color: var(--ae-ink);
+		text-decoration: none;
+	}
+
+	.ae-nav a:hover {
+		color: var(--ae-cobalt);
+	}
+
+	.ae-nav a[aria-current="page"] {
+		color: var(--ae-cobalt);
+		text-decoration: underline;
+		text-underline-offset: 5px;
+	}
+
+	/* The one nav item that asks for something wears the CTA colour. */
+	.ae-nav-act {
+		background: var(--ae-coral);
+		color: var(--ae-on-coral) !important;
+		font-family: var(--ae-display) !important;
+		font-weight: 700;
+		padding: 8px 18px;
+		border-radius: var(--ae-r-pill);
+	}
+
+	.ae-nav-act:hover {
+		background: var(--ae-coral-ink);
+		color: var(--ae-on-coral) !important;
+	}
+
+	.ae-nav-act[aria-current="page"] {
+		text-decoration: none;
+		color: var(--ae-on-coral) !important;
+	}
+</style>

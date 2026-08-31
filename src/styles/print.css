@@ -1,40 +1,66 @@
-/* Print stylesheet for the toolkit's printable pages (the one-pager, the
+/*
+ * Print stylesheet for the toolkit's printable pages (the one-pager, the
  * council script). Bundled globally but entirely gated behind @media print,
- * so it has zero effect on screen. Forces the light palette regardless of
- * prefers-color-scheme — a broadside pinned to a corkboard is ink on paper,
- * not a dark-mode screenshot, and a black-ink printer must render it cleanly.
+ * so it has zero effect on screen.
+ *
+ * Two rules govern what happens on paper. First, the light palette is forced
+ * regardless of prefers-color-scheme — a broadside pinned to a corkboard is
+ * ink on paper, not a dark-mode screenshot. Second, the ink goes quiet: cobalt
+ * and gold both collapse to black, because a home laser printer renders a mid
+ * blue as a muddy gray and the structure is carried by rules and weight
+ * anyway. Coral is the one accent that stays, because it survives conversion
+ * to grayscale as a distinctly lighter tone and it is what marks the ask.
+ *
+ * !important is deliberate throughout, for the same reason as motion.css:
+ * these rules must beat component-scoped styles that come later in the
+ * cascade at equal specificity. Both files turn off noImportantStyles in
+ * biome.json.
  */
 
 @media print {
 	:root {
-		--ae-paper: #ffffff;
-		--ae-paper-2: #ffffff;
+		--ae-ground: #ffffff;
+		--ae-ground-2: #ffffff;
 		--ae-ink: #000000;
 		--ae-muted: #333333;
+		--ae-faint: #555555;
 		--ae-line: #999999;
 		--ae-line-soft: #cccccc;
 		--ae-line-strong: #000000;
 		--ae-card: transparent;
-		--ae-indigo: #000000;
-		--ae-indigo-ink: #000000;
-		--ae-madder: #000000;
-		--ae-madder-wash: transparent;
+		--ae-shadow: transparent;
+		--ae-cobalt: #000000;
+		--ae-cobalt-ink: #000000;
+		--ae-cobalt-wash: transparent;
+		--ae-coral: #e03a26;
+		--ae-coral-ink: #e03a26;
+		--ae-coral-wash: transparent;
+		--ae-sun: #ffffff;
+		--ae-sun-wash: transparent;
 		--ae-gold: #000000;
+		--ae-gold-ink: #000000;
 		--ae-gold-wash: transparent;
+		--ae-on-sun: #000000;
+		--ae-on-coral: #ffffff;
+		--ae-on-cobalt: #ffffff;
+		--ae-weave: transparent;
 	}
 
 	@page {
-		margin: 0.75in;
+		margin: 0.6in;
 	}
 
-	.ae-weave,
 	.ae-header,
 	.ae-footer,
 	.ae-skip,
 	.ae-note,
 	.ae-cta-row,
-	.ae-btn {
-		display: none;
+	.ae-btn,
+	.ae-weave-field,
+	.ae-punchchip,
+	.ae-matcher-bar,
+	.ae-print-hide {
+		display: none !important;
 	}
 
 	body {
@@ -57,5 +83,21 @@
 	.ae-printable section,
 	.ae-printable .ae-card {
 		break-inside: avoid;
+	}
+
+	/* Nothing on paper animates, and nothing on paper lifts. */
+	.ae-lift,
+	.ae-rise,
+	.ae-ink-shift,
+	.ae-stitch-run {
+		animation: none !important;
+		transform: none !important;
+		box-shadow: none !important;
+		opacity: 1 !important;
+	}
+
+	.ae-ink-shift {
+		background: none !important;
+		color: #000000 !important;
 	}
 }

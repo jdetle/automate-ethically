@@ -1,0 +1,198 @@
+/*
+ * The seven motion primitives. There is no eighth.
+ *
+ * Fun is decoration, never information: no number, state, deadline or status
+ * on this site is ever conveyed by motion alone. Everything here is CSS
+ * keyframes or a scroll/view timeline — no JavaScript drives any of it, so the
+ * zero-JS thesis holds. Every primitive names its own fallback, and the whole
+ * file is switched off under prefers-reduced-motion.
+ *
+ *   weave-tighten   scroll()          hero grounds only     → static mid grid
+ *   rise-reveal     view()            stats, cards entering → fully visible
+ *   float-idle      transform loop    decorative chips only → static
+ *   ink-shift       gradient loop     one headline per page → solid ink
+ *   stitch-run      dashoffset loop   section dividers      → static stitch
+ *   hover-lift      transition        cards, tiles, buttons → color only
+ *   page-crossfade  view transitions  cross-page nav        → instant nav
+ */
+
+/* 1 — weave-tighten ------------------------------------------------------ */
+@keyframes ae-weave-tighten {
+	from {
+		background-size: 72px 72px;
+	}
+	to {
+		background-size: 22px 22px;
+	}
+}
+
+/* 2 — rise-reveal -------------------------------------------------------- */
+@keyframes ae-rise-reveal {
+	from {
+		opacity: 0;
+		transform: translateY(18px);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+
+/*
+ * Opt-in, and only inside @supports: if the view() timeline is unavailable the
+ * rule never applies at all, so the element is simply visible.
+ *
+ * The range ends at `entry 100%` — the moment the element has fully entered
+ * the viewport — and not at a point on the `cover` phase. A cover-phase end
+ * is measured against the element's entire pass across the screen, so
+ * anything that never travels that far (a card near the bottom of a short
+ * page, or anything at all when the viewport is as tall as the document, as
+ * in a full-page screenshot) stays pinned to the first keyframe, which is
+ * invisible. Tying the end to "fully entered" makes the finished state
+ * reachable whenever the element is actually on screen.
+ *
+ * That ties completion to element height, so this primitive belongs only on
+ * blocks comfortably shorter than a viewport — stat cards, tiles. An element
+ * taller than the viewport can never fully enter, and would sit part-faded
+ * while the reader is looking straight at it. Long-form blocks don't rise.
+ */
+@supports (animation-timeline: view()) {
+	.ae-rise {
+		animation: ae-rise-reveal linear both;
+		animation-timeline: view();
+		animation-range: entry 0% entry 100%;
+	}
+}
+
+/* 3 — float-idle --------------------------------------------------------- */
+@keyframes ae-float-idle {
+	0%,
+	100% {
+		transform: translateY(0) rotate(-6deg);
+	}
+	50% {
+		transform: translateY(-12px) rotate(-2deg);
+	}
+}
+
+@keyframes ae-float-idle-b {
+	0%,
+	100% {
+		transform: translateY(-8px) rotate(10deg);
+	}
+	50% {
+		transform: translateY(8px) rotate(4deg);
+	}
+}
+
+/* 4 — ink-shift ---------------------------------------------------------- */
+@keyframes ae-ink-shift {
+	0% {
+		background-position: 0% 50%;
+	}
+	50% {
+		background-position: 100% 50%;
+	}
+	100% {
+		background-position: 0% 50%;
+	}
+}
+
+/*
+ * One display headline per page. The gradient is painted into the glyphs, so
+ * the fallback has to restore a real ink colour rather than leaving
+ * transparent text — see the reduced-motion block at the bottom.
+ */
+.ae-ink-shift {
+	background: linear-gradient(90deg, var(--ae-coral), #ff8a3c, var(--ae-sun), #ff8a3c, var(--ae-coral));
+	background-size: 300% 100%;
+	-webkit-background-clip: text;
+	background-clip: text;
+	color: transparent;
+	animation: ae-ink-shift 7s ease infinite;
+}
+
+@supports not ((background-clip: text) or (-webkit-background-clip: text)) {
+	.ae-ink-shift {
+		background: none;
+		color: var(--ae-ink);
+		animation: none;
+	}
+}
+
+/* 5 — stitch-run --------------------------------------------------------- */
+@keyframes ae-stitch-run {
+	to {
+		stroke-dashoffset: -38px;
+	}
+}
+
+/* 6 — hover-lift --------------------------------------------------------- */
+.ae-lift {
+	transition:
+		transform var(--ae-dur-lift) var(--ae-ease),
+		box-shadow var(--ae-dur-lift) var(--ae-ease),
+		border-color var(--ae-dur-lift) var(--ae-ease);
+}
+
+.ae-lift:hover,
+.ae-lift:focus-visible {
+	transform: translateY(-4px);
+	box-shadow: 0 10px 24px var(--ae-shadow);
+}
+
+/* 7 — page-crossfade ----------------------------------------------------- */
+/*
+ * Cross-document view transitions are a CSS feature: no router, no client
+ * script, nothing added to the bundle. Browsers without it navigate instantly,
+ * which is the fallback we want anyway.
+ */
+@view-transition {
+	navigation: auto;
+}
+
+/* ------------------------------------------------------------------------ */
+/*
+ * The kill switch. !important is deliberate and is why this file (with
+ * print.css) turns off noImportantStyles in biome.json: these rules have to
+ * beat component-scoped styles that are both later in the cascade and of
+ * equal specificity. A reduced-motion preference losing a specificity tie to
+ * a card's hover transition is not an acceptable failure mode.
+ */
+@media (prefers-reduced-motion: reduce) {
+	.ae-weave-anim,
+	.ae-rise,
+	.ae-float,
+	.ae-float--b,
+	.ae-stitch-run {
+		animation: none !important;
+	}
+
+	.ae-rise {
+		opacity: 1 !important;
+		transform: none !important;
+	}
+
+	.ae-ink-shift {
+		background: none;
+		color: var(--ae-ink);
+		animation: none;
+	}
+
+	.ae-lift,
+	.ae-lift:hover,
+	.ae-lift:focus-visible {
+		transition: none;
+		transform: none;
+		box-shadow: none;
+	}
+
+	.ae-lift:hover,
+	.ae-lift:focus-visible {
+		border-color: var(--ae-cobalt);
+	}
+
+	@view-transition {
+		navigation: none;
+	}
+}

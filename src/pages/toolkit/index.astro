@@ -1,7 +1,7 @@
 ---
 import { getCollection } from "astro:content";
 import Page from "../../layouts/Page.astro";
-import Stitch from "../../components/Stitch.astro";
+import Stitch from "../../components/ui/Stitch.astro";
 
 const docs = (await getCollection("toolkit")).sort(
 	(a, b) => a.data.order - b.data.order,
