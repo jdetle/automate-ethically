@@ -223,6 +223,42 @@ Astro static output, zero client JavaScript by default (see above), hand-written
 CSS (no Tailwind). Light theme is the default (a broadside is printed on paper);
 dark tracks `prefers-color-scheme` and converges toward jacquard's indigo denim.
 
+## Caching
+
+Two layers, both aimed at not paying twice for the same bytes.
+
+**Prompt caching (Anthropic).** `/api/guide` sends its system prompt as two
+blocks with a `cache_control` breakpoint on the stable one, so the ~900-token
+system prompt and the web-search tool definition are cached across turns
+rather than re-sent at full price on every message. The injection
+reinforcement is a separate block *after* the breakpoint on purpose: appending
+it would make the cached prefix depend on whether a given message looked
+suspicious, and one adversarial visitor would evict the entry for everyone.
+Each reply logs `guide: usage in=… out=… cache_read=… cache_write=…`, so a
+cache that has quietly stopped working shows up in the logs rather than in a
+bill weeks later — `cache_read` pinned at 0 across consecutive turns means
+something is invalidating the prefix. Cached input is billed at roughly a
+tenth of normal, and the daily token budget discounts it accordingly.
+
+**Speech cache (ours).** Identical text produces byte-identical audio, so
+`/api/speech` keys a byte-bounded LRU on `sha256(model + voice + text)` and
+serves repeats from memory: no OpenAI call, and no spend against the daily
+character budget. The response carries `X-Speech-Cache: hit|miss`. On a miss
+the upstream stream is teed rather than buffered, so audio still starts as
+fast as the model produces it while a copy accumulates; a stream that errors
+or is abandoned stores nothing, because a truncated entry would serve a
+sentence that stops mid-word for as long as it lived. In-memory and
+per-process, like the budget counters — it resets on restart and is not shared
+across replicas, which is fine because the cache is an optimisation and never
+a correctness requirement.
+
+**Deliberately not cached: guide answers themselves.** Replies are
+location-personalised and built from live web search, so serving a stored
+answer would mean showing one town's meeting to another town, or last month's
+council agenda as current. On a site whose entire argument is that automated
+decisions should be answerable, quietly replaying a stale civic answer is the
+wrong trade. Prompt caching gets most of the saving without any of that risk.
+
 ## Deploy
 
 Azure Container Apps. `az acr build` builds the image on ACR (no Docker daemon

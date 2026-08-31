@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import { budgetRemaining, clientIp, spend, verifyTurnstile } from "../../lib/api-limits";
 import { readSecret } from "../../lib/env";
 import { verifySessionToken } from "../../lib/guide-session";
+import { getCachedSpeech, putCachedSpeech, speechCacheKey } from "../../lib/speech-cache";
 import { initSentry, Sentry } from "../../lib/sentry";
 
 export const prerender = false;
@@ -29,6 +30,16 @@ initSentry();
 const DAILY_CHARACTER_BUDGET = 300_000; // ~$3.60/day at gpt-4o-mini-tts rates ($12/1M chars)
 const BUDGET_POOL = "speech-characters";
 const MAX_CHARS_PER_CALL = 2000; // matches guide.ts's reply-length ceiling
+
+// Named once so the request and the cache key can never disagree about which
+// voice is stored. cedar is one of the two voices OpenAI recommends on
+// gpt-4o-mini-tts; pcm is the only response_format the player can decode.
+const TTS_MODEL = "gpt-4o-mini-tts";
+const TTS_VOICE = "cedar";
+const PCM_HEADERS = {
+	"Content-Type": "audio/L16;rate=24000;channels=1",
+	"Cache-Control": "no-store",
+};
 
 export const GET: APIRoute = async () => {
 	// process.env, not import.meta.env — see the comment in guide.ts's
@@ -94,6 +105,18 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 		});
 	}
 
+	// Before the budget check, not after: a cached sentence costs nothing to
+	// serve, so it must neither be refused when the budget is exhausted nor
+	// spend against it. Charging for audio we already have would make the
+	// cache pointless.
+	const cacheKey = speechCacheKey(text, TTS_MODEL, TTS_VOICE);
+	const cached = getCachedSpeech(cacheKey);
+	if (cached) {
+		return new Response(new Uint8Array(cached), {
+			headers: { ...PCM_HEADERS, "X-Speech-Cache": "hit" },
+		});
+	}
+
 	if (!budgetRemaining(BUDGET_POOL, DAILY_CHARACTER_BUDGET)) {
 		return new Response(JSON.stringify({ error: "rate limited" }), {
 			status: 429,
@@ -116,8 +139,8 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 			// model (tts-1/tts-1-hd's voice roster tops out at 9 older voices
 			// and doesn't include it) — same PCM output format either way.
 			body: JSON.stringify({
-				model: "gpt-4o-mini-tts",
-				voice: "cedar",
+				model: TTS_MODEL,
+				voice: TTS_VOICE,
 				input: text,
 				response_format: "pcm",
 			}),
@@ -154,12 +177,29 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 		});
 	}
 
-	// Pass the PCM stream straight through — no buffering, so audio starts
-	// playing about as fast as the model can produce it.
-	return new Response(upstream.body, {
-		headers: {
-			"Content-Type": "audio/L16;rate=24000;channels=1",
-			"Cache-Control": "no-store",
-		},
+	// Tee rather than buffer. The chunks reach the browser exactly as they
+	// arrive, so audio still starts about as fast as the model can produce it;
+	// a copy accumulates alongside and is stored only once the stream has
+	// finished cleanly. A stream that errors or is abandoned half-way stores
+	// nothing, because a truncated entry would serve a sentence that stops
+	// mid-word for as long as it lived in the cache.
+	const chunks: Uint8Array[] = [];
+	let bytes = 0;
+
+	const teed = upstream.body.pipeThrough(
+		new TransformStream<Uint8Array, Uint8Array>({
+			transform(chunk, controller) {
+				chunks.push(chunk);
+				bytes += chunk.byteLength;
+				controller.enqueue(chunk);
+			},
+			flush() {
+				if (bytes > 0) putCachedSpeech(cacheKey, Buffer.concat(chunks, bytes));
+			},
+		}),
+	);
+
+	return new Response(teed, {
+		headers: { ...PCM_HEADERS, "X-Speech-Cache": "miss" },
 	});
 };
