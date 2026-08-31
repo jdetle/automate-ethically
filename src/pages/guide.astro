@@ -516,18 +516,25 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 		voiceBtn.append(icon, document.createTextNode(on ? " Reading aloud. Turn off" : " Read replies aloud"));
 	}
 
-	void speechConfigured().then((available) => {
-		if (!available || !voiceBtn) return;
-		// Never auto-enable from a stored preference: Safari only unlocks audio
-		// inside a real gesture, so a "voice on" restored at page load would be
-		// a promise the page cannot keep. The stored value decides the *label*
-		// nudge, not the state.
-		muted = true;
-		voiceBtn.hidden = false;
-		setVoiceLabel(false);
-		voiceBtn.setAttribute("aria-pressed", "false");
+	// Bound now, not inside the probe below.
+	//
+	// This listener used to be attached only once speechConfigured() came
+	// back. That was survivable while the button was genuinely hidden until
+	// then, but once it was given a `display` the `hidden` attribute stopped
+	// working and it painted immediately — visible, styled, obviously
+	// pressable, and wired to nothing. A click in that window did not toggle,
+	// did not warn, and was not replayed when the probe landed; it simply
+	// vanished, and the visitor went on to send a message with voice still
+	// off. Production showed the shape of it plainly: a guide reply, and no
+	// speech request anywhere after it.
+	//
+	// A control that is on screen must work. The guard is a flag, not the
+	// presence of a listener.
+	let speechAvailable = false;
 
-		voiceBtn.addEventListener("click", () => {
+	voiceBtn?.addEventListener("click", () => {
+		if (!voiceBtn || !speechAvailable) return;
+		{
 			const turningOn = muted;
 			if (turningOn) {
 				// MUST be called synchronously in the click handler — see
@@ -561,7 +568,20 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 			} catch {
 				/* non-fatal */
 			}
-		});
+		}
+	});
+
+	void speechConfigured().then((available) => {
+		if (!available || !voiceBtn) return;
+		// Never auto-enable from a stored preference: Safari only unlocks audio
+		// inside a real gesture, so a "voice on" restored at page load would be
+		// a promise the page cannot keep. The stored value decides the *label*
+		// nudge, not the state.
+		muted = true;
+		speechAvailable = true;
+		voiceBtn.hidden = false;
+		setVoiceLabel(false);
+		voiceBtn.setAttribute("aria-pressed", "false");
 	});
 
 	// Replies are markdown (headings, lists, links to this site's own pages).
@@ -1140,7 +1160,8 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 	 * than on source order. */
 	.ae-guide-location[hidden],
 	.ae-guide-location-form[hidden],
-	.ae-guide-turn-speaking[hidden] {
+	.ae-guide-turn-speaking[hidden],
+	.ae-guide-voice[hidden] {
 		display: none;
 	}
 
