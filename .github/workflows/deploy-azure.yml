@@ -66,8 +66,13 @@ on:
   workflow_dispatch:
 
 concurrency:
-  # One deploy at a time: two overlapping runs would race on the revision.
-  group: deploy-azure
+  # One deploy at a time per ref: two overlapping runs would race on the
+  # revision. Keyed by ref rather than a bare constant — a run that queues
+  # against a runner label nothing answers can leave the group wedged, and
+  # every later run then sits in `pending` with no jobs ever created, which
+  # is what happened here for the whole life of the repo. A per-ref key also
+  # means a manual dispatch can't be stuck behind an abandoned push.
+  group: deploy-azure-${{ github.ref }}
   cancel-in-progress: false
 
 permissions:
@@ -165,15 +170,47 @@ jobs:
             --set-env-vars "${ENV_VARS[@]}" \
             --output none
 
-      - name: Say where it landed
+      # A green deploy job used to mean "az returned 0", which is not the same
+      # as "the new code is serving". This fails the run if the app is not
+      # running the image we just pushed, or if the site does not answer.
+      - name: Verify the revision is actually serving
         env:
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         run: |
+          set -euo pipefail
+          TAG="${GITHUB_SHA::7}"
+
+          for i in $(seq 1 30); do
+            STATE=$(az containerapp show --name ca-automate-ethically \
+              --resource-group rg-platform \
+              --subscription "$AZURE_SUBSCRIPTION_ID" \
+              --query "properties.runningStatus" -o tsv)
+            LIVE=$(az containerapp show --name ca-automate-ethically \
+              --resource-group rg-platform \
+              --subscription "$AZURE_SUBSCRIPTION_ID" \
+              --query "properties.template.containers[0].image" -o tsv)
+            [ "$STATE" = "Running" ] && [ "${LIVE##*:}" = "$TAG" ] && break
+            sleep 10
+          done
+
+          if [ "${LIVE##*:}" != "$TAG" ]; then
+            echo "app is on ${LIVE##*:}, expected $TAG" >&2
+            exit 1
+          fi
+
           FQDN=$(az containerapp show --name ca-automate-ethically \
             --resource-group rg-platform \
             --subscription "$AZURE_SUBSCRIPTION_ID" \
             --query "properties.configuration.ingress.fqdn" -o tsv)
-          echo "Site: https://${FQDN}" >> "$GITHUB_STEP_SUMMARY"
+
+          for path in / /guide /search /act; do
+            CODE=$(curl -sS -o /dev/null -w "%{http_code}" --retry 5 --retry-delay 5 \
+              --retry-all-errors "https://${FQDN}${path}")
+            echo "${path} -> ${CODE}"
+            [ "$CODE" = "200" ] || { echo "${path} answered ${CODE}" >&2; exit 1; }
+          done
+
+          echo "Site: https://${FQDN} (${TAG})" >> "$GITHUB_STEP_SUMMARY"
 
       # TODO(s10 tenant): once `register-app-observability.sh --tenant
       # automate-ethically` has run and S10_INGEST_KEY exists as a repo

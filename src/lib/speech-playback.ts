@@ -89,6 +89,8 @@ export async function unlockAudio(): Promise<boolean> {
 export interface SpeechSession {
 	/** Queue a piece of text. Segments play strictly in the order queued. */
 	enqueue: (text: string) => void;
+	/** True once at least one buffer has actually been scheduled to play. */
+	readonly audible: boolean;
 	/** No more text is coming; resolves `done` once everything has played. */
 	end: () => void;
 	cancel: () => void;
@@ -126,6 +128,15 @@ export function plainTextForSpeech(markdown: string): string {
 export function startSpeech(
 	sessionToken: () => Promise<string>,
 	onLevel: (level: number, bands: Float32Array) => void,
+	/**
+	 * Fires once, the first time a buffer is actually scheduled onto the
+	 * clock. Callers use it to show a "reading aloud" affordance only when
+	 * something is really being read aloud: /api/speech can answer 503 (no
+	 * key) or reject the session token, and both of those paths return
+	 * quietly below — the reply is already on screen, so failing silently is
+	 * right, but claiming to be speaking is not.
+	 */
+	onAudible?: () => void,
 ): SpeechSession {
 	// Captured into a non-null local so the closures below (which outlive this
 	// call) can't be narrowed away by a later reassignment of sharedCtx.
@@ -141,6 +152,7 @@ export function startSpeech(
 	let cursor = ctx.currentTime + LEAD_SECONDS;
 	let cancelled = false;
 	let ended = false;
+	let audible = false;
 	const sources: AudioBufferSourceNode[] = [];
 	const controllers: AbortController[] = [];
 
@@ -233,6 +245,11 @@ export function startSpeech(
 				source.start(cursor);
 				cursor += buffer.duration;
 				sources.push(source);
+
+				if (!audible) {
+					audible = true;
+					onAudible?.();
+				}
 			}
 		} catch {
 			/* aborted or stream error — whatever was scheduled still plays */
@@ -258,6 +275,9 @@ export function startSpeech(
 	}
 
 	return {
+		get audible() {
+			return audible;
+		},
 		enqueue(text: string) {
 			if (cancelled || ended) return;
 			chain = chain.then(() => speakSegment(text));
