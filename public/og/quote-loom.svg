@@ -7,7 +7,7 @@
 		<circle cx="1128" cy="96" r="5" fill="#2b4bf2" stroke="none"/>
 	</g>
 	<text x="600" y="240" text-anchor="middle" font-family="Space Grotesk" font-size="66" font-weight="700" fill="#101733" letter-spacing="-1.5">The loom did not</text><text x="600" y="322" text-anchor="middle" font-family="Space Grotesk" font-size="66" font-weight="700" fill="#101733" letter-spacing="-1.5">remove the weaver.</text>
-	<text x="600" y="390" text-anchor="middle" font-family="DM Sans" font-size="24" fill="#5b6474">A person chose the pattern, punched the cards, and signed the bolt. 1804.</text>
+	<text x="600" y="390" text-anchor="middle" font-family="DM Sans" font-size="24" fill="#5b6474">A person chose the pattern, punched the cards, and signed the bolt.</text>
 	<g stroke="#2b4bf2" stroke-width="3" stroke-linecap="round">
 		<circle cx="72" cy="534" r="5" fill="#2b4bf2" stroke="none"/>
 		<line x1="86" y1="534" x2="1114" y2="534" stroke-dasharray="16 12"/>
