@@ -276,6 +276,6 @@ jobs:
           RESP=$(curl -sS -X POST "$S10_INGEST_URL/v2/envelopes" \
             -H "Authorization: Bearer $S10_INGEST_KEY" \
             -H "Content-Type: application/x-ndjson" \
-            --data-binary '{"kind":"pageview","tenant":"automate-ethically","path":"/__ci-smoke-test"}')
+            --data-binary "{\"kind\":\"page\",\"tenant\":\"automate-ethically\",\"name\":\"/__ci-smoke-test\",\"signal_id\":\"$(uuidgen | tr 'A-Z' 'a-z')\",\"occurred_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"context\":{\"pathname\":\"/__ci-smoke-test\"}}")
           echo "$RESP"
           echo "$RESP" | grep -q '"accepted":[1-9]' || { echo "s10 rejected the smoke envelope"; exit 1; }
