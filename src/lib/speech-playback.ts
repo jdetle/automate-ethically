@@ -44,6 +44,21 @@ export function speechConfigured(): Promise<boolean> {
 
 let sharedCtx: AudioContext | null = null;
 
+/**
+ * True as soon as a context has been built inside a gesture, which is the only
+ * part that has to happen synchronously.
+ *
+ * Callers used to gate on a boolean set from `unlockAudio().then(...)`, so a
+ * visitor who pressed "read replies aloud" and then sent a message before
+ * `resume()` had resolved was silently given no voice at all, under a toggle
+ * that said it was on. Resuming can take a moment; building the context
+ * cannot. Everything after this point is scheduled hundreds of milliseconds
+ * later, by which time the resume has long landed.
+ */
+export function audioContextReady(): boolean {
+	return sharedCtx !== null;
+}
+
 function audioContextCtor(): typeof AudioContext | null {
 	return (
 		window.AudioContext ??
@@ -57,7 +72,11 @@ function audioContextCtor(): typeof AudioContext | null {
  * or Safari will refuse to resume and every later utterance is silent.
  * Safe to call repeatedly.
  */
-export async function unlockAudio(): Promise<boolean> {
+export function unlockAudio(): Promise<boolean> {
+	return doUnlock();
+}
+
+async function doUnlock(): Promise<boolean> {
 	const Ctx = audioContextCtor();
 	if (!Ctx) return false;
 	if (!sharedCtx) {
@@ -137,6 +156,14 @@ export function startSpeech(
 	 * right, but claiming to be speaking is not.
 	 */
 	onAudible?: () => void,
+	/**
+	 * Fires at most once, when a segment was asked for and produced no sound.
+	 * Every path below returns quietly — a 503 from an unconfigured key, a
+	 * rejected session token, a dropped connection — on the reasoning that the
+	 * reply is already on screen. That is right about the reply and wrong
+	 * about the person, who asked to hear it and is owed a reason.
+	 */
+	onSilent?: (reason: string) => void,
 ): SpeechSession {
 	// Captured into a non-null local so the closures below (which outlive this
 	// call) can't be narrowed away by a later reassignment of sharedCtx.
@@ -155,6 +182,13 @@ export function startSpeech(
 	let audible = false;
 	const sources: AudioBufferSourceNode[] = [];
 	const controllers: AbortController[] = [];
+
+	let reported = false;
+	const silent = (reason: string) => {
+		if (reported || cancelled) return;
+		reported = true;
+		onSilent?.(reason);
+	};
 
 	const meterBuf = new Float32Array(analyser.fftSize);
 	const freqBuf = new Uint8Array(analyser.frequencyBinCount);
@@ -207,9 +241,22 @@ export function startSpeech(
 				signal: controller.signal,
 			});
 		} catch {
-			return; // network or abort — the text is already on screen
+			// Also the path a rejected session token takes: sessionToken() is
+			// awaited inside this try, so a failed verification lands here.
+			silent("the connection dropped before any audio arrived");
+			return;
 		}
-		if (!response.ok || !response.body || cancelled) return;
+		if (cancelled) return;
+		if (!response.ok || !response.body) {
+			silent(
+				response.status === 503
+					? "the voice isn't configured on the server"
+					: response.status === 429
+						? "the daily limit for spoken replies is used up"
+						: `the server answered ${response.status}`,
+			);
+			return;
+		}
 
 		const reader = response.body.getReader();
 		let carry: Uint8Array | null = null;
@@ -254,6 +301,7 @@ export function startSpeech(
 		} catch {
 			/* aborted or stream error — whatever was scheduled still plays */
 		}
+		if (!audible) silent("the audio stream arrived empty");
 	}
 
 	function settleIfFinished() {

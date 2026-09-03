@@ -44,18 +44,36 @@ import Stitch from "../components/ui/Stitch.astro";
 		<div class="ae-prose">
 			<p>
 				One request per page view, to a path on this same domain, containing
-				exactly four fields:
+				exactly these fields:
 			</p>
 			<ul>
-				<li><code>path</code>, the page you loaded</li>
+				<li><code>pathname</code>, the page you loaded</li>
 				<li><code>referrer</code>, the page that linked you here, if any</li>
-				<li><code>screen_bucket</code>, one of <code>mobile</code>, <code>tablet</code>, <code>desktop</code></li>
-				<li><code>tenant</code>, a constant identifying this site</li>
+				<li><code>device_type</code>, one of <code>mobile</code>, <code>tablet</code>, <code>desktop</code></li>
+				<li><code>occurred_at</code>, when it happened</li>
+				<li>
+					<code>signal_id</code>, a random one-time value that names
+					<em>this message</em> so a retry isn't counted as a second visit. A
+					new one is generated for every request and nothing is kept, so two
+					requests from you share nothing that could join them back together.
+				</li>
 			</ul>
 			<p>
-				There is no visitor ID, no session ID, no fingerprint, no
-				<code>localStorage</code> write, and no capture of anything you click
-				or type. The source is one short file you can read in a minute:
+				On the guide page only, the same beacon sends one more line per reply,
+				recording whether the spoken voice was switched on and whether it
+				actually produced sound — <code>spoken</code>, <code>silent</code> with
+				a short reason, or <code>not_requested</code>. That exists because the
+				voice was broken for weeks and nothing in our logs could distinguish
+				"nobody turned it on" from "it failed", so it was fixed four times by
+				guesswork. It carries none of your question, none of the reply, and
+				nothing you typed.
+			</p>
+			<p>
+				There is no visitor ID, no session ID, no fingerprint, and no capture
+				of anything you click or type. The one <code>localStorage</code> write
+				this site makes is on the guide page and is not analytics: it
+				remembers whether you asked for replies to be read aloud, so you don't
+				have to press the button again on every visit. The source is one short file you can read in a minute:
 				<a href="/beacon.js">/beacon.js</a>. It is served as a plain file
 				rather than inlined so that the Content Security Policy can refuse
 				inline scripts outright.

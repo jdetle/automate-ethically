@@ -47,9 +47,16 @@
 #                        still has to be passed as a build-arg, not a runtime
 #                        env var: Vite inlines PUBLIC_-prefixed vars into the
 #                        client bundle at build time (see Dockerfile).
-#   S10_INGEST_KEY      (once the automate-ethically s10 tenant is registered —
-#                        see README's Analytics section — used only by the
-#                        smoke-test step below, never baked into the image)
+#   S10_INGEST_KEY      the automate-ethically s10 ingest bearer key, minted by
+#                        the platform repo's register-app-observability.sh. Set
+#                        as a Container Apps secret and read by nginx at
+#                        container start (docker-entrypoint.sh substitutes it
+#                        into the /telemetry/ proxy header) — never baked into
+#                        the image, because anything in the image is public.
+#                        Unset means every beacon envelope is relayed with an
+#                        empty bearer and rejected 401 upstream, which is
+#                        exactly the state the site shipped in: instrumented
+#                        on paper, silent in practice, and nothing said so.
 #   SENTRY_DSN          server-side error tracking for the three on-demand
 #                        routes (src/lib/sentry.ts, @sentry/node only — not
 #                        @sentry/astro, which would inject a browser SDK into
@@ -134,6 +141,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          S10_INGEST_KEY: ${{ secrets.S10_INGEST_KEY }}
         run: |
           set -euo pipefail
           az extension add --name containerapp --upgrade --yes 2>/dev/null || true
@@ -174,6 +182,22 @@ jobs:
           else
             echo "OPENAI_API_KEY not set — the guide will stay text-only after this deploy" >&2
             ENV_VARS+=("OPENAI_API_KEY=")
+          fi
+
+          # Read by docker-entrypoint.sh, not by the Node app: nginx needs it
+          # to attach the ingest bearer server-side, because the beacon that
+          # sends the envelope runs in a browser and a browser cannot keep a
+          # secret. A secret ref, not a plain env var — this one really is one.
+          if [ -n "$S10_INGEST_KEY" ]; then
+            az containerapp secret set \
+              --name ca-automate-ethically --resource-group rg-platform \
+              --subscription "$AZURE_SUBSCRIPTION_ID" \
+              --secrets "s10-ingest-key=$S10_INGEST_KEY" \
+              --output none
+            ENV_VARS+=("S10_INGEST_KEY=secretref:s10-ingest-key")
+          else
+            echo "S10_INGEST_KEY not set — every telemetry envelope will be relayed with an empty bearer and rejected 401 upstream; the site will look instrumented and report nothing" >&2
+            ENV_VARS+=("S10_INGEST_KEY=")
           fi
 
           # Not a secret ref: a DSN is meant to be public (it can only submit
@@ -232,20 +256,26 @@ jobs:
 
           echo "Site: https://${FQDN} (${TAG})" >> "$GITHUB_STEP_SUMMARY"
 
-      # TODO(s10 tenant): once `register-app-observability.sh --tenant
-      # automate-ethically` has run and S10_INGEST_KEY exists as a repo
-      # secret, uncomment this step. It exists because a past integration
-      # 401'd silently on a malformed key — this turns that failure mode into
-      # a red CI run instead of a site that looks instrumented and isn't.
-      #
-      # - name: Smoke-test s10 ingest
-      #   env:
-      #     S10_INGEST_KEY: ${{ secrets.S10_INGEST_KEY }}
-      #   run: |
-      #     set -euo pipefail
-      #     RESP=$(curl -sS -X POST "$S10_INGEST_URL/v2/envelopes" \
-      #       -H "Authorization: Bearer $S10_INGEST_KEY" \
-      #       -H "Content-Type: application/x-ndjson" \
-      #       --data-binary '{"kind":"pageview","tenant":"automate-ethically","path":"/__ci-smoke-test"}')
-      #     echo "$RESP"
-      #     echo "$RESP" | grep -q '"accepted":[1-9]' || { echo "s10 rejected the smoke envelope"; exit 1; }
+      # The tenant is registered, so this runs for real now. It exists
+      # because a past integration 401'd silently on a malformed key — the
+      # same failure the site then shipped with for its whole life, an empty
+      # bearer rejected upstream while every page went on cheerfully firing
+      # a beacon. Presence is not health: the only way to know a credential
+      # works is to spend it, which is the same rule scripts/smoke-prod.sh
+      # encodes for the API keys.
+      - name: Smoke-test s10 ingest
+        env:
+          S10_INGEST_URL: https://ca-s10-ingest.purplewave-fe0ae338.eastus2.azurecontainerapps.io
+          S10_INGEST_KEY: ${{ secrets.S10_INGEST_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "$S10_INGEST_KEY" ]; then
+            echo "S10_INGEST_KEY is not set as a repo secret — telemetry is not reaching s10" >&2
+            exit 1
+          fi
+          RESP=$(curl -sS -X POST "$S10_INGEST_URL/v2/envelopes" \
+            -H "Authorization: Bearer $S10_INGEST_KEY" \
+            -H "Content-Type: application/x-ndjson" \
+            --data-binary '{"kind":"pageview","tenant":"automate-ethically","path":"/__ci-smoke-test"}')
+          echo "$RESP"
+          echo "$RESP" | grep -q '"accepted":[1-9]' || { echo "s10 rejected the smoke envelope"; exit 1; }

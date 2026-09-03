@@ -89,6 +89,83 @@ interface Turn {
 }
 
 /**
+ * Builds the exact request sent to the Messages API.
+ *
+ * Extracted from the handler so the caching arrangement below can be asserted
+ * by a test rather than inferred from a log line. That distinction is the
+ * whole point: a caching regression is silent — the replies keep coming, the
+ * bill is just higher — and the usual cause is not a bad first implementation
+ * but a later edit to prompt assembly that nobody connects to cost for weeks.
+ *
+ * ---- The caching arrangement -------------------------------------------
+ *
+ * Caching is a prefix match. The request renders as tools, then system, then
+ * messages, and any byte that changes invalidates everything after it. Two
+ * breakpoints, at the two stability boundaries:
+ *
+ * 1. **Explicit, on the last stable system block.** Because system renders
+ *    after tools, this one marker covers the web-search tool definition and
+ *    SYSTEM_PROMPT together — the part that is identical for every visitor
+ *    for as long as this file is deployed. SYSTEM_PROMPT is ~900 tokens and
+ *    Claude Opus 5's minimum cacheable prefix is 512, so it clears the bar;
+ *    under the minimum the marker is ignored silently rather than erroring.
+ *
+ * 2. **Top-level automatic, for the conversation.** The API places it on the
+ *    last cacheable block and moves it forward as the conversation grows, so
+ *    turn N+1 reads turns 1..N instead of reprocessing them. History arrives
+ *    from the client as plain text (the client never echoes tool blocks back)
+ *    and is capped at MAX_TURNS_PER_CONVERSATION turns of up to 4000
+ *    characters, so without this a long conversation re-paid full price on
+ *    every reply for everything said so far.
+ *
+ * The injection reinforcement is a second system block placed *after* the
+ * breakpoint, deliberately. Appending it to SYSTEM_PROMPT would make the
+ * cached prefix depend on whether this particular message looked suspicious,
+ * so one adversarial visitor would evict the entry every other turn and every
+ * conversation after theirs would pay to rebuild it.
+ *
+ * Nothing else here may become per-request. No timestamp, no visitor id, no
+ * conditional system section, no tool list assembled from anything that
+ * varies — each of those moves bytes in the prefix and silently ends caching.
+ */
+export function buildGuideRequest({
+	messages,
+	injectionSuspected,
+}: {
+	messages: Anthropic.MessageParam[];
+	injectionSuspected: boolean;
+}): Anthropic.MessageStreamParams {
+	return {
+		model: "claude-opus-5",
+		max_tokens: MAX_TOKENS_PER_REPLY,
+		// Automatic caching for the growing conversation tail (breakpoint 2).
+		cache_control: { type: "ephemeral" },
+		system: [
+			{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } },
+			...(injectionSuspected
+				? [{ type: "text" as const, text: INJECTION_REINFORCEMENT }]
+				: []),
+		],
+		messages,
+		tools: [
+			{
+				type: "web_search_20260209",
+				name: "web_search",
+				// Not 3. This model runs web_search *inside* a code-execution
+				// step, and each attempt there can consume several uses — at 3
+				// it exhausted the budget on the first question and reported
+				// "my search isn't working right now" to visitors, which read
+				// as a broken feature when it was really a starved one. Even
+				// 10 was marginal in testing — one question could still trip
+				// the limit mid-answer. The per-conversation and daily budgets
+				// are what bound cost; this only bounds a single reply.
+				max_uses: 20,
+			},
+		],
+	};
+}
+
+/**
  * Extracts what the model actually did — the searches it ran and the domains
  * it read — from the final message's own content blocks. Reported to the
  * visitor verbatim (see the trace panel in guide.astro). Nothing here is
@@ -246,28 +323,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 			extra: { ip, snippet: message.slice(0, 200) },
 		});
 	}
-	// Two blocks, not one concatenated string, so the cached prefix stays
-	// byte-identical whatever a given visitor typed.
-	//
-	// Prompt caching is a prefix match: the request renders as tools, then
-	// system, then messages, and any byte that changes invalidates everything
-	// after it. Appending the injection reinforcement to SYSTEM_PROMPT would
-	// make the prefix depend on whether *this* message looked suspicious, so
-	// one adversarial visitor would evict the entry every other turn and every
-	// following conversation would pay full price to rebuild it. Keeping the
-	// reinforcement in its own uncached block after the breakpoint means the
-	// stable half is always the same bytes.
-	//
-	// The breakpoint sits on the last stable block, so it covers the tool
-	// definition too. SYSTEM_PROMPT is ~900 tokens and Claude Opus 5's minimum
-	// cacheable prefix is 512, so this clears the bar; below it the marker is
-	// ignored silently rather than erroring.
-	const systemForCall: Anthropic.TextBlockParam[] = [
-		{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } },
-		...(injectionSuspected
-			? [{ type: "text" as const, text: INJECTION_REINFORCEMENT }]
-			: []),
-	];
+	const callParams = buildGuideRequest({ messages, injectionSuspected });
 
 	const stream = new ReadableStream({
 		async start(controller) {
@@ -281,29 +337,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 			let accumulated = "";
 
 			try {
-				const anthropicStream = client.messages.stream({
-					model: "claude-opus-5",
-					max_tokens: MAX_TOKENS_PER_REPLY,
-					system: systemForCall,
-					messages,
-					tools: [
-						{
-							type: "web_search_20260209",
-							name: "web_search",
-							// Not 3. This model runs web_search *inside* a
-							// code-execution step, and each attempt there can
-							// consume several uses — at 3 it exhausted the budget
-							// on the first question and reported "my search isn't
-							// working right now" to visitors, which read as a
-							// broken feature when it was really a starved one.
-							// Even 10 was marginal in testing — one question could
-							// still trip the limit mid-answer. The per-conversation
-							// and daily budgets above are what bound cost; this only
-							// bounds a single reply.
-							max_uses: 20,
-						},
-					],
-				});
+				const anthropicStream = client.messages.stream(callParams);
 
 				anthropicStream.on("streamEvent", (event) => {
 					if (violation) return;

@@ -170,10 +170,24 @@ Concretely:
   hand-written pageview beacon**, not the full `@jdetle/s10-web` SDK — the SDK
   sets a never-expiring `localStorage` identifier and auto-captures DOM
   breadcrumbs by default, which we don't want on this site.
-- The beacon POSTs one envelope per pageview (path, referrer, screen-width
-  bucket) to `/telemetry/` on our own origin, which nginx proxies to
-  `ca-s10-ingest`. The path is intentionally not obfuscated — an ad-blocker
+- The beacon POSTs one s10 `SignalEnvelope` per pageview (`kind: "page"` —
+  pathname, referrer, device-type bucket, plus the `signal_id`/`occurred_at`
+  the schema requires) to `/telemetry/` on our own origin, which nginx proxies
+  to `ca-s10-ingest`. The path is intentionally not obfuscated — an ad-blocker
   that blocks it should block it; the footer says so.
+- The guide page sends one `kind: "event"` envelope per reply
+  (`guide.speech`), recording only whether the voice was on and whether it
+  produced sound. It exists because the spoken replies were broken for weeks
+  and the nginx access log — the only telemetry that was actually working —
+  can show that no audio was requested but not whether anyone asked for any.
+  Four fixes shipped on that inference. No message text, no reply text.
+- **The envelope shape is s10's, not ours.** The first beacon posted
+  `{kind: "pageview", tenant, path}`: `pageview` is not a kind, `page` is, and
+  `signal_id`/`occurred_at` are required. Every envelope this site sent for its
+  whole life was rejected with a parse error, silently, because analytics is
+  fire-and-forget. Check `services/s10/s10-schema/src/envelope.rs` before
+  adding a field, and rely on the deploy workflow's ingest smoke test rather
+  than on the request appearing to succeed.
 - **The ingest key is never sent to the browser.** The beacon posts
   unauthenticated to our own origin; nginx attaches
   `Authorization: Bearer …` on the way out, reading the key from the
@@ -192,11 +206,13 @@ Concretely:
 - Conversion — signups, petition signatures — is measured by Action Network's
   own dashboard via `?source=` codes on every CTA, not by s10. s10 answers "how
   many people read this," AN answers "how many people acted."
-- Setup: `platform/scripts/register-app-observability.sh --tenant
-  automate-ethically`, then verify the printed ingest key against the
-  `s10_ingest_<tenant>_…` prefixed format (a past integration silently 401'd on
-  a bare-hex key — the deploy workflow asserts a real `200`/`accepted` response
-  to catch this before it ships quietly broken).
+- Setup (done): `platform/scripts/register-app-observability.sh --tenant
+  automate-ethically` mints the ingest and query keys into the platform Key
+  Vault and restarts `ca-s10-ingest`. The ingest key goes in the
+  `S10_INGEST_KEY` repo secret; the deploy workflow sets it as a Container Apps
+  secret and asserts a real `200`/`accepted` from the ingest before the run is
+  allowed to go green. Presence is not health — the key format alone proves
+  nothing, which is why the check spends it.
 
 ## Printable materials
 

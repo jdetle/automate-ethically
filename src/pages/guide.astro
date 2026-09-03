@@ -168,7 +168,13 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 
 <script>
 	import { decayOrb, pulseFromText, setLevelAndSpectrum, setOrbConversationState } from "../lib/guide-orb-state";
-	import { speechConfigured, startSpeech, type SpeechSession, unlockAudio } from "../lib/speech-playback";
+	import {
+		audioContextReady,
+		speechConfigured,
+		startSpeech,
+		type SpeechSession,
+		unlockAudio,
+	} from "../lib/speech-playback";
 	import { renderMarkdownInto } from "../lib/markdown-dom";
 
 	const VOICE_KEY = "ae-guide-voice";
@@ -176,11 +182,31 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 	// ---- Turnstile: one challenge per session (see ensureSession below) --
 	declare global {
 		interface Window {
+			/** Defined by public/beacon.js. Absent if a blocker ate it. */
+			aeSignal?: (name: string, attributes?: Record<string, string>) => void;
 			turnstile?: {
 				render: (container: HTMLElement | string, options: Record<string, unknown>) => string;
 				execute: (widgetId: string) => void;
 				reset: (widgetId: string) => void;
 			};
+		}
+	}
+
+	/**
+	 * Reports one guide-side fact to our own analytics (see public/beacon.js
+	 * and /privacy for the whole field list). Short fixed strings only — never
+	 * a question, a reply, or anything typed.
+	 *
+	 * This is here because of what the audio bug cost: the server log can say
+	 * "no audio was ever requested" but not whether anybody asked for any, so
+	 * four fixes were shipped on inference about which of those it was. Best
+	 * effort by design — a blocked beacon must never affect the page.
+	 */
+	function signal(name: string, attributes?: Record<string, string>) {
+		try {
+			window.aeSignal?.(name, attributes);
+		} catch {
+			/* analytics must never break the guide */
 		}
 	}
 
@@ -497,7 +523,6 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 	// its own is startling, and the toggle only appears once we know a voice
 	// is actually configured server-side.
 	let muted = true;
-	let audioUnlocked = false;
 	let currentSpeech: SpeechSession | null = null;
 
 	/**
@@ -545,8 +570,13 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 				muted = false;
 				setVoiceLabel(true);
 				voiceBtn.setAttribute("aria-pressed", "true");
+				// Someone who turns the voice on after reading a reply almost
+				// always wants to hear *that* reply. Offer it rather than
+				// making them ask the same question again.
+				for (const row of document.querySelectorAll<HTMLDivElement>(".ae-guide-turn")) {
+					revealSpeakButton(row);
+				}
 				void unlocking.then((ok) => {
-					audioUnlocked = ok;
 					if (!ok) {
 						// Be honest rather than leaving a toggle that lies.
 						muted = true;
@@ -563,6 +593,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 				currentSpeech = null;
 				hideSpeakingIndicator();
 			}
+			signal("guide.voice_toggled", { state: muted ? "off" : "on" });
 			try {
 				localStorage.setItem(VOICE_KEY, muted ? "off" : "on");
 			} catch {
@@ -571,17 +602,55 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 		}
 	});
 
+	/**
+	 * Unlocks audio on this visitor's next real interaction — a click anywhere
+	 * on the page, a key press, a tap.
+	 *
+	 * A preference restored at load cannot unlock the context itself: browsers
+	 * require a gesture, which is precisely why the preference used to be
+	 * thrown away on every load. It does not need to. The next thing someone
+	 * on this page does is type a question and press send, and that is a
+	 * gesture — so the unlock rides along on it, and by the time a reply comes
+	 * back the context has been running for seconds.
+	 */
+	function armGestureUnlock() {
+		const once = () => void unlockAudio();
+		document.addEventListener("pointerdown", once, { once: true, capture: true });
+		document.addEventListener("keydown", once, { once: true, capture: true });
+	}
+
 	void speechConfigured().then((available) => {
 		if (!available || !voiceBtn) return;
-		// Never auto-enable from a stored preference: Safari only unlocks audio
-		// inside a real gesture, so a "voice on" restored at page load would be
-		// a promise the page cannot keep. The stored value decides the *label*
-		// nudge, not the state.
-		muted = true;
 		speechAvailable = true;
 		voiceBtn.hidden = false;
-		setVoiceLabel(false);
-		voiceBtn.setAttribute("aria-pressed", "false");
+
+		// Honour the choice this visitor already made. Refusing to restore it
+		// is what the production logs were actually describing: eleven
+		// conversations across two days, and one single request for audio. The
+		// toggle had to be found and pressed again on *every* page load, and
+		// pressed *before* typing, or the reply came back silent — because
+		// beginSpeech() is decided once, at the top of send(). Restoring the
+		// preference is not speech starting unasked: nothing is spoken until a
+		// message is sent, and the context is still unlocked by a real gesture
+		// (armGestureUnlock above), which is the part Safari actually cares
+		// about.
+		let stored: string | null = null;
+		try {
+			stored = localStorage.getItem(VOICE_KEY);
+		} catch {
+			/* private browsing — treat as no preference */
+		}
+		muted = stored !== "on";
+		setVoiceLabel(!muted);
+		voiceBtn.setAttribute("aria-pressed", muted ? "false" : "true");
+		if (!muted) armGestureUnlock();
+		signal("guide.voice_ready", { state: muted ? "off" : "on", restored: stored ? "yes" : "no" });
+
+		// Replies already on screen become speakable the moment we know a
+		// voice exists.
+		for (const row of document.querySelectorAll<HTMLDivElement>(".ae-guide-turn")) {
+			revealSpeakButton(row);
+		}
 	});
 
 	// Replies are markdown (headings, lists, links to this site's own pages).
@@ -619,30 +688,47 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 		speakingRow = null;
 	}
 
-	// Speaks the finished reply. Never blocks the conversation — a person can
-	// send the next message while the last reply is still being read aloud,
-	// same as jacquard. Silent fallback to the text-pulse already shown while
-	// streaming if speech isn't configured or the call fails; nothing is
-	// lost, the reply is already on screen either way.
 	/**
-	 * Speaks the reply as it is written, not after it is finished.
+	 * Says so, instead of nothing.
 	 *
-	 * Waiting for the whole reply meant a long silence and then a monologue —
-	 * which is what "not real time" felt like. This starts a session up front
-	 * and hands it each sentence as soon as the model completes one, so the
-	 * guide begins talking within a sentence or two of starting to write.
+	 * A speech request that fails returns quietly all the way down — the reply
+	 * is on screen either way, which was the whole argument for silence. But
+	 * someone who switched the voice on and heard nothing has no way to tell a
+	 * broken key from a browser that refused, from a page that never asked at
+	 * all, and every one of those looks identical: "the audio does not work".
 	 */
-	function beginSpeech(row: HTMLDivElement | null): SpeechSession | null {
-		if (muted || !audioUnlocked) return null;
+	function noteSpeechFailed(row: HTMLDivElement | null, reason: string) {
+		if (!row) return;
+		let el = row.querySelector<HTMLParagraphElement>(".ae-guide-turn-note");
+		if (!el) {
+			el = document.createElement("p");
+			el.className = "ae-guide-turn-note";
+			el.setAttribute("role", "status");
+			row.appendChild(el);
+		}
+		el.textContent = `Couldn't read this one aloud — ${reason}.`;
+	}
+
+	/** Wires a session's callbacks to a row and makes it the current one. */
+	function openSpeech(row: HTMLDivElement | null, trigger: string): SpeechSession | null {
 		try {
 			// The indicator is shown from the onAudible callback, not here.
 			// It used to appear the moment a session was constructed, which is
 			// before a single byte of audio has been asked for — so a
 			// /api/speech that answered 503, or a rejected session token, left
 			// "Reading aloud — stop" sitting under a silent reply.
-			const session = startSpeech(ensureSession, setLevelAndSpectrum, () => {
-				if (currentSpeech === session) showSpeakingIndicator(row);
-			});
+			const session = startSpeech(
+				ensureSession,
+				setLevelAndSpectrum,
+				() => {
+					signal("guide.speech", { outcome: "spoken", trigger });
+					if (currentSpeech === session) showSpeakingIndicator(row);
+				},
+				(reason) => {
+					signal("guide.speech", { outcome: "silent", trigger, reason });
+					noteSpeechFailed(row, reason);
+				},
+			);
 			currentSpeech = session;
 			void session.done.then(() => {
 				if (currentSpeech === session) {
@@ -657,6 +743,64 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 			// part that matters.
 			return null;
 		}
+	}
+
+	// Speaks the finished reply. Never blocks the conversation — a person can
+	// send the next message while the last reply is still being read aloud,
+	// same as jacquard.
+	/**
+	 * Speaks the reply as it is written, not after it is finished.
+	 *
+	 * Waiting for the whole reply meant a long silence and then a monologue —
+	 * which is what "not real time" felt like. This starts a session up front
+	 * and hands it each sentence as soon as the model completes one, so the
+	 * guide begins talking within a sentence or two of starting to write.
+	 */
+	function beginSpeech(row: HTMLDivElement | null): SpeechSession | null {
+		// audioContextReady(), not a boolean set from unlockAudio().then():
+		// resuming a context takes a moment and building one does not, so
+		// gating on the resolved result meant that pressing the toggle and
+		// sending straight away produced no voice at all under a toggle that
+		// said "Reading aloud".
+		if (muted || !audioContextReady()) return null;
+		return openSpeech(row, "with_reply");
+	}
+
+	/**
+	 * Speaks a reply that is already on screen.
+	 *
+	 * Every fix before this one left the same hole: beginSpeech() is decided
+	 * once, at the top of send(), so a reply written while the voice was off
+	 * could never afterwards be heard. Someone who read a reply, thought "I'd
+	 * like to hear that", and pressed the voice toggle got nothing — and
+	 * concluded, correctly from where they stood, that the audio is broken.
+	 * This is the second chance, and its click is itself the gesture that
+	 * unlocks the context.
+	 */
+	function speakText(row: HTMLDivElement, text: string) {
+		const spoken = text.trim();
+		if (!spoken) return;
+		currentSpeech?.cancel();
+		currentSpeech = null;
+		hideSpeakingIndicator();
+		// Synchronous inside a click handler, which is the one moment a
+		// gesture is guaranteed. unlockAudio() builds the context before it
+		// awaits anything, so openSpeech() below always has one to use.
+		void unlockAudio();
+		const session = openSpeech(row, "on_demand");
+		if (!session) {
+			noteSpeechFailed(row, "this browser wouldn't start audio");
+			return;
+		}
+		session.enqueue(spoken);
+		session.end();
+	}
+
+	/** Offers the per-reply play control, once we know a voice exists. */
+	function revealSpeakButton(row: HTMLDivElement | null) {
+		if (!row || !speechAvailable) return;
+		const btn = row.querySelector<HTMLButtonElement>(".ae-guide-turn-speak");
+		if (btn && row.dataset.spoken) btn.hidden = false;
 	}
 
 	/**
@@ -800,6 +944,17 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 				hideSpeakingIndicator();
 			});
 			row.appendChild(speakingBtn);
+
+			// The second chance. Hidden until the reply has finished and a
+			// voice is known to exist (revealSpeakButton), so it never offers
+			// to read an empty bubble or a reply nothing can speak.
+			const speakBtn = document.createElement("button");
+			speakBtn.type = "button";
+			speakBtn.className = "ae-guide-turn-speak";
+			speakBtn.hidden = true;
+			speakBtn.textContent = "🔊 Read this aloud";
+			speakBtn.addEventListener("click", () => speakText(row, row.dataset.spoken ?? ""));
+			row.appendChild(speakBtn);
 
 			// Filled in by the "trace" event once the reply completes. Empty
 			// (and hidden) for replies that never searched.
@@ -954,6 +1109,20 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 				// from "that was the last one" until the stream actually ends.
 				renderReplyText(replyP, replyText);
 				history.push({ role: "assistant", text: replyText });
+				// Speakable from now on, whether or not it was spoken live.
+				replyRow.dataset.spoken = replyText;
+				revealSpeakButton(replyRow);
+				// The measurement that was missing. "No audio was requested"
+				// and "audio was requested and failed" look identical in the
+				// server log, and guessing between them is what made this bug
+				// survive four fixes.
+				if (!speech) {
+					signal("guide.speech", {
+						outcome: "not_requested",
+						voice: muted ? "off" : "on",
+						audio: audioContextReady() ? "unlocked" : "locked",
+					});
+				}
 				if (speech) {
 					if (speechBuffer.trim()) speech.enqueue(speechBuffer);
 					speech.end();
@@ -1161,6 +1330,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 	.ae-guide-location[hidden],
 	.ae-guide-location-form[hidden],
 	.ae-guide-turn-speaking[hidden],
+	.ae-guide-turn-speak[hidden],
 	.ae-guide-voice[hidden] {
 		display: none;
 	}
@@ -1545,6 +1715,37 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 		align-self: flex-end;
 		background: var(--ae-indigo-wash);
 		border-color: var(--ae-indigo);
+	}
+
+	/* Quieter than the speaking pill: an offer, not an alarm. */
+	.ae-guide-turn-speak {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		margin-top: 10px;
+		padding: 4px 12px;
+		border-radius: 999px;
+		border: 1px solid var(--ae-line-strong);
+		background: transparent;
+		color: var(--ae-indigo-ink);
+		font-family: var(--ae-sans);
+		font-size: 12px;
+		font-weight: 600;
+		cursor: pointer;
+	}
+
+	.ae-guide-turn-speak:hover {
+		background: var(--ae-cobalt-wash);
+		border-color: var(--ae-cobalt);
+		color: var(--ae-cobalt);
+	}
+
+	/* Says why a reply that was asked for aloud stayed silent. */
+	.ae-guide-turn-note {
+		margin-top: 8px;
+		font-family: var(--ae-sans);
+		font-size: 12px;
+		color: var(--ae-muted);
 	}
 
 	.ae-guide-turn-speaking {

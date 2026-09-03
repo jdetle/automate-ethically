@@ -163,6 +163,122 @@ test.describe("reading replies aloud", () => {
 		await expect(page.locator(".ae-guide-turn-speaking")).toBeHidden({ timeout: 15_000 });
 	});
 
+	/**
+	 * The hole four earlier fixes left open. beginSpeech() is decided once, at
+	 * the top of send(), so a reply written while the voice was off could
+	 * never afterwards be heard — someone who read a reply, wanted to hear it,
+	 * and pressed the toggle got nothing at all.
+	 */
+	test("a reply already on screen can still be read aloud", async ({ page }) => {
+		const h = await withAudioSpy(page);
+		await page.goto("/guide");
+		await expect(page.locator("#guide-input")).toBeEnabled({ timeout: 20_000 });
+
+		// Voice deliberately left OFF for the whole exchange.
+		await send(page, "where do I start?");
+		await expect(page.locator(".ae-guide-turn:not(.ae-guide-turn--you)").last()).toContainText(
+			"city council",
+		);
+		expect(h.speechPosts(), "spoke without being asked").toBe(0);
+
+		const speak = page.locator(".ae-guide-turn-speak").last();
+		await expect(speak).toBeVisible({ timeout: 15_000 });
+		await speak.click();
+
+		await expect
+			.poll(() => audioStarts(page), {
+				message: "a reply on screen could not be read aloud after the fact",
+				timeout: 10_000,
+			})
+			.toBeGreaterThan(0);
+	});
+
+	/**
+	 * Turning it on used to have to happen on every page load, before typing,
+	 * or the reply came back silent. Production logs showed the result: eleven
+	 * conversations, one request for audio.
+	 */
+	test("the choice survives a reload", async ({ page }) => {
+		const h = await withAudioSpy(page);
+		await page.goto("/guide");
+		await expect(page.locator("#guide-input")).toBeEnabled({ timeout: 20_000 });
+		await expect(page.locator("#guide-voice")).toBeVisible({ timeout: 15_000 });
+		await page.locator("#guide-voice").click();
+		await expect(page.locator("#guide-voice")).toHaveAttribute("aria-pressed", "true");
+
+		await page.reload();
+		await expect(page.locator("#guide-input")).toBeEnabled({ timeout: 20_000 });
+		await expect(page.locator("#guide-voice")).toHaveAttribute("aria-pressed", "true", {
+			timeout: 15_000,
+		});
+
+		// Nothing was pressed after the reload: the gesture that unlocks the
+		// context is the send itself.
+		await send(page, "where do I start?");
+		await expect
+			.poll(() => audioStarts(page), {
+				message: "a restored 'voice on' produced no sound",
+				timeout: 10_000,
+			})
+			.toBeGreaterThan(0);
+		expect(h.speechPosts()).toBeGreaterThan(0);
+	});
+
+	/**
+	 * Pressing the toggle and sending immediately used to lose the race
+	 * against resume(), so the very first message after switching voice on was
+	 * silent under a toggle reading "Reading aloud".
+	 */
+	test("switching on and sending immediately still speaks", async ({ page }) => {
+		await withAudioSpy(page);
+		await page.goto("/guide");
+		await expect(page.locator("#guide-input")).toBeEnabled({ timeout: 20_000 });
+		await expect(page.locator("#guide-voice")).toBeVisible({ timeout: 15_000 });
+
+		await page.locator("#guide-input").fill("where do I start?");
+		// No await between the two clicks beyond what Playwright needs: the
+		// send lands while resume() is still in flight.
+		await page.locator("#guide-voice").click();
+		await page.locator("#guide-send").click();
+
+		await expect
+			.poll(() => audioStarts(page), {
+				message: "lost the race against resume() and said nothing",
+				timeout: 10_000,
+			})
+			.toBeGreaterThan(0);
+	});
+
+	/** A failure that says nothing is indistinguishable from a broken page. */
+	test("when the server can't speak, it says so", async ({ page }) => {
+		await withAudioSpy(page);
+		await page.route("**/api/speech", (route) => {
+			if (route.request().method() === "GET") {
+				return route.fulfill({
+					status: 200,
+					contentType: "application/json",
+					body: JSON.stringify({ configured: true }),
+				});
+			}
+			return route.fulfill({
+				status: 503,
+				contentType: "application/json",
+				body: JSON.stringify({ error: "not configured" }),
+			});
+		});
+
+		await page.goto("/guide");
+		await expect(page.locator("#guide-input")).toBeEnabled({ timeout: 20_000 });
+		await expect(page.locator("#guide-voice")).toBeVisible({ timeout: 15_000 });
+		await page.locator("#guide-voice").click();
+		await send(page, "where do I start?");
+
+		await expect(page.locator(".ae-guide-turn-note")).toContainText("isn't configured", {
+			timeout: 15_000,
+		});
+		await expect(page.locator(".ae-guide-turn-speaking")).toBeHidden();
+	});
+
 	test("turning it back off stops asking for audio", async ({ page }) => {
 		const h = await withAudioSpy(page);
 		await page.goto("/guide");
