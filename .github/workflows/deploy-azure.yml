@@ -273,9 +273,17 @@ jobs:
             echo "S10_INGEST_KEY is not set as a repo secret — telemetry is not reaching s10" >&2
             exit 1
           fi
+          # s10 wants a ULID for signal_id: ten time characters and sixteen
+          # random ones, Crockford base32, as the beacon mints them.
+          ulid() {
+            local A=0123456789ABCDEFGHJKMNPQRSTVWXYZ t=$(date +%s%3N) s=""
+            for _ in $(seq 1 10); do s="${A:$((t % 32)):1}$s"; t=$((t / 32)); done
+            for _ in $(seq 1 16); do s="$s${A:$((RANDOM % 32)):1}"; done
+            echo "$s"
+          }
           RESP=$(curl -sS -X POST "$S10_INGEST_URL/v2/envelopes" \
             -H "Authorization: Bearer $S10_INGEST_KEY" \
             -H "Content-Type: application/x-ndjson" \
-            --data-binary "{\"kind\":\"page\",\"tenant\":\"automate-ethically\",\"name\":\"/__ci-smoke-test\",\"signal_id\":\"$(uuidgen | tr 'A-Z' 'a-z')\",\"occurred_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"context\":{\"pathname\":\"/__ci-smoke-test\"}}")
+            --data-binary "{\"kind\":\"page\",\"tenant\":\"automate-ethically\",\"name\":\"/__ci-smoke-test\",\"signal_id\":\"$(ulid)\",\"occurred_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"context\":{\"pathname\":\"/__ci-smoke-test\"}}")
           echo "$RESP"
           echo "$RESP" | grep -q '"accepted":[1-9]' || { echo "s10 rejected the smoke envelope"; exit 1; }
